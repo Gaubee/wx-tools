@@ -49,14 +49,15 @@ const walkSnap = () => WalkFile(path.join(__dirname, "data"));
 const walkAuthor = () => WalkDir(path.join(__dirname, "data"));
 
 const __dirname = fileURLToPath(new URL("./", import.meta.url));
-const allow_number_keys = [
-  "createTime",
-  "likeCount",
-  "commentCount",
-  "readCount",
-  "forwardCount",
-  "favCount",
-];
+const allow_number_keys = new Map([
+  ["createTime", (item) => item.createTime],
+  ["likeCount", (item) => item.likeCount],
+  ["commentCount", (item) => item.commentCount],
+  ["readCount", (item) => item.readCount],
+  ["forwardCount", (item) => item.forwardCount],
+  ["favCount", (item) => item.favCount],
+  ["description", (item) => item.desc.description],
+]);
 const port = 3001;
 http
   .createServer((req, res) => {
@@ -72,7 +73,15 @@ http
       case "/help":
         {
           res_json({
-            snapshoot: `$START_TIME-$END_TIME | $TIME | default=$CURRENT_TIME`,
+            author: "match-keys",
+            snapshoot: `number-range`,
+            createTime: `number-range`,
+            likeCount: `number-range`,
+            commentCount: `number-range`,
+            readCount: `number-range`,
+            forwardCount: `number-range`,
+            favCount: `number-range`,
+            description: "match-keys",
           });
         }
         break;
@@ -122,9 +131,9 @@ http
           /** 作者过滤器 */
           const author_finder = toStringKeyFilter("authors");
 
-          const filters = allow_number_keys.map((key) => {
+          const filters = [...allow_number_keys].map(([key, getter]) => {
             const range_filter = toNumRangeFilter(key);
-            return (item) => range_filter(item[key]);
+            return (item) => range_filter(getter(item));
           });
           const item_filter = (item) => {
             return filters.every((filter) => filter(item));
