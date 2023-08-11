@@ -56,6 +56,8 @@ const allow_number_keys = new Map([
   ["readCount", (item) => item.readCount],
   ["forwardCount", (item) => item.forwardCount],
   ["favCount", (item) => item.favCount],
+]);
+const allow_string_keys = new Map([
   ["description", (item) => item.desc.description],
 ]);
 const port = 3001;
@@ -132,12 +134,16 @@ http
           /** 作者过滤器 */
           const author_finder = toStringKeyFilter("authors");
 
-          const filters = [...allow_number_keys].map(([key, getter]) => {
+          const number_filters = [...allow_number_keys].map(([key, getter]) => {
             const range_filter = toNumRangeFilter(key);
             return (item) => range_filter(getter(item));
           });
+          const string_filters = [...allow_string_keys].map(([key, getter]) => {
+            const range_filter = toStringKeyFilter(key);
+            return (item) => range_filter(getter(item));
+          });
           const item_filter = (item) => {
-            return filters.every((filter) => filter(item));
+            return [...number_filters, ...string_filters].every((filter) => filter(item));
           };
           const result = {};
           for (const entry of walkSnap()) {
