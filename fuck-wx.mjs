@@ -246,6 +246,7 @@ http
         }
         content += "</pre>";
         htmlContent = htmlContent.replace("CONTENT", content);
+        res.setHeader("Content-Type", "text/html");
         res.end(htmlContent);
       }
     );
