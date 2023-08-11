@@ -69,7 +69,8 @@ http
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify(data));
     };
-    switch (req.url) {
+    const reqUrl = new URL(req.url, "http://localhost");
+    switch (reqUrl.pathname) {
       case "/help":
         {
           res_json({
@@ -120,11 +121,11 @@ http
                 };
               }) ?? [() => true];
             const key_filter = (text) => {
-              return matchs.some((match) => match(key));
+              return matchs.some((match) => match(text));
             };
             return key_filter;
           }
-          const search = new URL(req.url, "http://localhost").searchParams;
+          const search = reqUrl.searchParams;
           /** 快照过滤器 */
           const snapshoot_filter = toNumRangeFilter("snapshoot");
 
@@ -138,7 +139,6 @@ http
           const item_filter = (item) => {
             return filters.every((filter) => filter(item));
           };
-
           const result = {};
           for (const entry of walkSnap()) {
             const author = path.parse(entry.dirname).name;
