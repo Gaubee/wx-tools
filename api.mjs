@@ -45,6 +45,9 @@ function* WalkDir(dir, deep = Infinity) {
   }
 }
 
+fs.mkdirSync(path.join(__dirname, "data"), {
+  recursive: true
+});
 const walkSnap = () => WalkFile(path.join(__dirname, "data"));
 const walkAuthor = () => WalkDir(path.join(__dirname, "data"));
 
