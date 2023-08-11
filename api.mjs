@@ -99,7 +99,7 @@ http
             const range = search
               .get(key)
               ?.split("-")
-              .map((v) => new Date(v).valueOf())
+              .map(Number)
               .filter((v) => !Number.isNaN(v))
               .slice(0, 2) ?? [-Infinity, +Infinity];
             if (range.length === 0) {
