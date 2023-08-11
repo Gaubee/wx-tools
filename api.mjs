@@ -50,7 +50,7 @@ const walkAuthor = () => WalkDir(path.join(__dirname, "data"));
 
 const __dirname = fileURLToPath(new URL("./", import.meta.url));
 const allow_number_keys = new Map([
-  ["createTime", (item) => item.createTime],
+  ["createTime", (item) => item.createTime * 1000],
   ["likeCount", (item) => item.likeCount],
   ["commentCount", (item) => item.commentCount],
   ["readCount", (item) => item.readCount],
