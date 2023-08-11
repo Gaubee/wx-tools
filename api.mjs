@@ -159,7 +159,7 @@ http
               snapshoots: [],
             }).snapshoots.push(data);
           }
-          res_json(result);
+          res_json([...Object.values(result)]);
         }
         break;
     }
