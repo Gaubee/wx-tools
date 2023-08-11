@@ -71,7 +71,7 @@ http
       res.setHeader("Content-Type", "application/json");
       res.end(JSON.stringify(data));
     };
-    const reqUrl = new URL(req.url, "http://localhost");
+    const reqUrl = new URL(req.url.replace('/api', ''), "http://localhost");
     switch (reqUrl.pathname) {
       case "/help":
         {
