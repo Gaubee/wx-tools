@@ -6,23 +6,47 @@ import path from "node:path";
 import http from "node:http";
 import { setTimeout } from "node:timers/promises";
 
-function* WalkFile(dir) {
+function* WalkFile(dir, deep = Infinity) {
+  if (deep <= 0) {
+    return;
+  }
   for (const name of fs.readdirSync(dir)) {
     const entrypath = path.join(dir, name);
     if (fs.statSync(entrypath).isFile()) {
       yield {
-        filename: name,
-        filepath: entrypath,
+        entryname: name,
+        entrypath: entrypath,
         dirname: dir,
         readJson() {
           return JSON.parse(fs.readFileSync(entrypath, "utf-8"));
         },
       };
     } else {
-      yield* WalkFile(entrypath);
+      yield* WalkFile(entrypath, deep - 1);
     }
   }
 }
+
+function* WalkDir(dir, deep = Infinity) {
+  if (deep <= 0) {
+    return;
+  }
+  for (const name of fs.readdirSync(dir)) {
+    const entrypath = path.join(dir, name);
+    if (fs.statSync(entrypath).isDirectory()) {
+      yield {
+        entryname: name,
+        entrypath: entrypath,
+        dirname: dir,
+      };
+    } else {
+      yield* WalkDir(entrypath, deep - 1);
+    }
+  }
+}
+
+const walkSnap = () => WalkFile(path.join(__dirname, "data"));
+const walkAuthor = () => WalkDir(path.join(__dirname, "data"));
 
 const __dirname = fileURLToPath(new URL("./", import.meta.url));
 const allow_number_keys = [
@@ -46,6 +70,11 @@ http
           res_json({
             snapshoot: `$START_TIME-$END_TIME | $TIME | default=$CURRENT_TIME`,
           });
+        }
+        break;
+      case "/authors":
+        {
+          res_json([...walkAuthor()].map((entry) => entry.entryname));
         }
         break;
       case "/query":
@@ -98,13 +127,13 @@ http
           };
 
           const result = {};
-          for (const entry of WalkFile(path.join(__dirname, "data"))) {
+          for (const entry of walkSnap()) {
             const author = path.parse(entry.dirname).name;
             if (!author_finder(author)) {
               continue;
             }
             const snapshoot = new Date(
-              entry.filename
+              entry.entryname
                 .replace(".json", "")
                 .replace(
                   /(\d+)_(\d+)_(\d+)\-(\d+)_(\d+)_(\d+)/,
@@ -134,4 +163,5 @@ http
   .listen(port, () => {
     console.log("https://codebeautify.org/jsonviewer");
     console.log(`http://localhost:${port}/query`);
+    console.log(`http://localhost:${port}/authors`);
   });

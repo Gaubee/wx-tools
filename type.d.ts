@@ -1,6 +1,5 @@
-/**
- * https://transform.tools/json-to-typescript
- */
+/// https://transform.tools/json-to-typescript
+
 export type QueryResult = {
   [key: string]: {
     user: {
@@ -211,3 +210,5 @@ export type QueryResult = {
     }>;
   };
 };
+
+export type AuthorsResult = Array<string>;
