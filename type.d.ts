@@ -1,5 +1,95 @@
 /// https://transform.tools/json-to-typescript
-
+export type PostItem = {
+  objectId: string;
+  createTime: number;
+  likeCount: number;
+  commentCount: number;
+  readCount: number;
+  forwardCount: number;
+  favCount: number;
+  commentClose: number;
+  visibleType: number;
+  status: number;
+  desc: {
+    media: Array<{
+      spec: Array<any>;
+      url: string;
+      thumbUrl: string;
+      mediaType: number;
+      videoPlayLen: number;
+      width: number;
+      height: number;
+      md5sum: string;
+      fileSize: number;
+      bitrate: number;
+      coverUrl: string;
+      fullThumbUrl: string;
+      fullUrl: string;
+      fullWidth: number;
+      fullHeight: number;
+      fullMd5sum: string;
+      fullFileSize: number;
+      fullBitrate: number;
+      halfRect: {};
+      fullCoverUrl: string;
+      cardShowStyle: number;
+    }>;
+    mentionedMusics: Array<any>;
+    shortTitle: Array<any>;
+    description: string;
+    mediaType: number;
+    location: {
+      longitude: number;
+      latitude: number;
+      city: string;
+      poiName: string;
+      poiAddress: string;
+      poiClassifyId: string;
+      poiClassifyType: number;
+    };
+    extReading: {
+      type: number;
+      style: number;
+    };
+    topic: {
+      finderTopicInfo: string;
+    };
+    feedLocation: {
+      longitude: number;
+      latitude: number;
+    };
+    event: {
+      eventTopicId: string;
+      eventName: string;
+      eventCreatorNickname: string;
+      eventAttendCount: number;
+    };
+    audio: {};
+  };
+  objectType: number;
+  attachList: {
+    attachments: Array<any>;
+  };
+  flag: number;
+  objectNonce: string;
+  permissionFlag: number;
+  canSetOriginalsoundTitle: boolean;
+  fullPlayRate: number;
+  avgPlayTimeSec: number;
+  disableInfo: {
+    isDisabled: boolean;
+  };
+  showOriginal: boolean;
+  exportId: string;
+  ringsetCount: number;
+  snscoverCount: number;
+  statusrefCount: number;
+  forwardAggregationCount: number;
+  originalInfo: {
+    auditOriginalFlag: number;
+  };
+  followCount: number;
+};
 export type QueryResult = Array<{
   user: {
     errCode: number;
@@ -115,97 +205,7 @@ export type QueryResult = Array<{
   };
   snapshoots: Array<{
     snapshoot: number;
-    list: Array<{
-      objectId: string;
-      createTime: number;
-      likeCount: number;
-      commentCount: number;
-      readCount: number;
-      forwardCount: number;
-      favCount: number;
-      commentClose: number;
-      visibleType: number;
-      status: number;
-      desc: {
-        media: Array<{
-          spec: Array<any>;
-          url: string;
-          thumbUrl: string;
-          mediaType: number;
-          videoPlayLen: number;
-          width: number;
-          height: number;
-          md5sum: string;
-          fileSize: number;
-          bitrate: number;
-          coverUrl: string;
-          fullThumbUrl: string;
-          fullUrl: string;
-          fullWidth: number;
-          fullHeight: number;
-          fullMd5sum: string;
-          fullFileSize: number;
-          fullBitrate: number;
-          halfRect: {};
-          fullCoverUrl: string;
-          cardShowStyle: number;
-        }>;
-        mentionedMusics: Array<any>;
-        shortTitle: Array<any>;
-        description: string;
-        mediaType: number;
-        location: {
-          longitude: number;
-          latitude: number;
-          city: string;
-          poiName: string;
-          poiAddress: string;
-          poiClassifyId: string;
-          poiClassifyType: number;
-        };
-        extReading: {
-          type: number;
-          style: number;
-        };
-        topic: {
-          finderTopicInfo: string;
-        };
-        feedLocation: {
-          longitude: number;
-          latitude: number;
-        };
-        event: {
-          eventTopicId: string;
-          eventName: string;
-          eventCreatorNickname: string;
-          eventAttendCount: number;
-        };
-        audio: {};
-      };
-      objectType: number;
-      attachList: {
-        attachments: Array<any>;
-      };
-      flag: number;
-      objectNonce: string;
-      permissionFlag: number;
-      canSetOriginalsoundTitle: boolean;
-      fullPlayRate: number;
-      avgPlayTimeSec: number;
-      disableInfo: {
-        isDisabled: boolean;
-      };
-      showOriginal: boolean;
-      exportId: string;
-      ringsetCount: number;
-      snscoverCount: number;
-      statusrefCount: number;
-      forwardAggregationCount: number;
-      originalInfo: {
-        auditOriginalFlag: number;
-      };
-      followCount: number;
-    }>;
+    list: Array<PostItem>;
   }>;
 }>;
 

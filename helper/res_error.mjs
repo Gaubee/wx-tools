@@ -1,3 +1,5 @@
+//@ts-check
+const html = String.raw;
 /**
  *
  * @param {import("node:http").OutgoingMessage} res
