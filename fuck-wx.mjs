@@ -192,10 +192,21 @@ const doFuck = async (writelog, writeend) => {
 };
 
 import http from "node:http";
+import { ListAllUrl, logAllUrl } from "./helper/all-ip.mjs";
 const html = String.raw;
 const port = 3000;
 http
   .createServer(async (req, res) => {
+    if (req.url?.startsWith("/static/")) {
+      try {
+        res.end(fs.readFileSync(path.join(__dirname, req.url)));
+      } catch (err) {
+        console.error(err);
+        res.statusCode = 404;
+        res.end();
+      }
+      return;
+    }
     const is_mobile = isMobile({ ua: req });
     var htmlContent = html`<!DOCTYPE html>
       <html lang="zh-cn">
@@ -219,7 +230,24 @@ http
               flex-direction: column;
               height: 100%;
             }
+            canvas {
+              position: absolute;
+              top: 0;
+              left: 0;
+              pointer-events: none;
+              visibility: hidden;
+            }
           </style>
+          <template id="font-installer">
+            <style>
+              @font-face {
+                font-family: "Consolas";
+                src: url("./static/Consolas.subset.woff") format("woff");
+                font-style: normal;
+                font-weight: normal;
+              }
+            </style>
+          </template>
         </head>
         <body>
           <div class="content">
@@ -227,11 +255,42 @@ http
               ? `<h3 style="color:#E91E63;">建议使用桌面电脑打开</h3>`
               : ""}
             CONTENT
+            <button class="" onclick="location.reload()">刷新</button>
           </div>
         </body>
+
+        <script>
+          var isSupportFontFamily = function (f) {
+            const h = "monospace";
+            const e = "▄█▀";
+            const d = 50;
+            const a = 100,
+              i = 100;
+            const c = document.createElement("canvas");
+            document.body.append(c);
+            const b = c.getContext("2d");
+            c.width = a;
+            c.height = i;
+            b.textAlign = "center";
+            b.fillStyle = "black";
+            b.textBaseline = "middle";
+            var g = function (j) {
+              b.clearRect(0, 0, a, i);
+              b.font = d + "px " + j + ", " + h;
+              b.fillText(e, a / 2, i / 2);
+              return b.getImageData(0, 0, a, i).data;
+            };
+            return indexedDB.cmp(g(h), g(f)) !== 0;
+          };
+          if (!isSupportFontFamily("Consolas")) {
+            document.head.append(
+              document.getElementById("font-installer").content
+            );
+          }
+        </script>
       </html>`;
 
-    let content = `<pre style='word-wrap: break-word; white-space: pre-wrap; font-family: Consolas, monospace;'>\n`;
+    let content = `<pre style="word-wrap: break-word; white-space: pre-wrap; font-family: Consolas, monospace;">\n`;
     await doFuck(
       (val) => {
         if (typeof val === "string") {
@@ -249,8 +308,16 @@ http
         res.setHeader("Content-Type", "text/html");
         res.end(htmlContent);
       }
-    );
+    ).catch((err) => {
+      res.setHeader("Content-Type", "text/html");
+      res.end(
+        err instanceof Error
+          ? html`<h1 class="color:red">${err.message}</h1>
+              <pre class="color:red">${err.stack}</pre>`
+          : html`<pre class="color:red">${String(err)}</pre>`
+      );
+    });
   })
-  .listen(port, () => {
-    console.log(`http://localhost:${port}/index.html`);
+  .listen(port, "0.0.0.0", () => {
+    logAllUrl(`http://localhost:${port}/index.html`);
   });

@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import http from "node:http";
 import { setTimeout } from "node:timers/promises";
+import { ListAllUrl, logAllUrl } from "./helper/all-ip.mjs";
 
 function* WalkFile(dir, deep = Infinity) {
   if (deep <= 0) {
@@ -182,8 +183,8 @@ http
         break;
     }
   })
-  .listen(port, () => {
+  .listen(port, "0.0.0.0", () => {
     console.log("https://codebeautify.org/jsonviewer");
-    console.log(`http://localhost:${port}/query`);
-    console.log(`http://localhost:${port}/authors`);
+    logAllUrl(`http://localhost:${port}/query`);
+    logAllUrl(`http://localhost:${port}/authors`);
   });
