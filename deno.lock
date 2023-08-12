@@ -1,0 +1,25 @@
+{
+  "version": "2",
+  "remote": {},
+  "npm": {
+    "specifiers": {
+      "adm-zip": "adm-zip@0.5.10",
+      "is-mobile": "is-mobile@4.0.0",
+      "qrcode-terminal": "qrcode-terminal@0.12.0"
+    },
+    "packages": {
+      "adm-zip@0.5.10": {
+        "integrity": "sha512-x0HvcHqVJNTPk/Bw8JbLWlWoo6Wwnsug0fnYYro1HBrjxZ3G7/AZk7Ahv8JwDe1uIcz8eBqvu86FuF1POiG7vQ==",
+        "dependencies": {}
+      },
+      "is-mobile@4.0.0": {
+        "integrity": "sha512-mlcHZA84t1qLSuWkt2v0I2l61PYdyQDt4aG1mLIXF5FDMm4+haBCxCPYSr/uwqQNRk1MiTizn0ypEuRAOLRAew==",
+        "dependencies": {}
+      },
+      "qrcode-terminal@0.12.0": {
+        "integrity": "sha512-EXtzRZmC+YGmGlDFbXKxQiMZNwCLEO6BANKXG4iCtSIM0yqc/pappSx3RIKr4r0uh5JsBckOXeKrB3Iz7mdQpQ==",
+        "dependencies": {}
+      }
+    }
+  }
+}

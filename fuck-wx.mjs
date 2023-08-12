@@ -193,6 +193,7 @@ const doFuck = async (writelog, writeend) => {
 
 import http from "node:http";
 import { ListAllUrl, logAllUrl } from "./helper/all-ip.mjs";
+import { res_error } from "./helper/res_error.mjs";
 const html = String.raw;
 const port = 3000;
 http
@@ -308,15 +309,7 @@ http
         res.setHeader("Content-Type", "text/html");
         res.end(htmlContent);
       }
-    ).catch((err) => {
-      res.setHeader("Content-Type", "text/html");
-      res.end(
-        err instanceof Error
-          ? html`<h1 class="color:red">${err.message}</h1>
-              <pre class="color:red">${err.stack}</pre>`
-          : html`<pre class="color:red">${String(err)}</pre>`
-      );
-    });
+    ).catch((err) => res_error(res, err));
   })
   .listen(port, "0.0.0.0", () => {
     logAllUrl(`http://localhost:${port}/index.html`);
