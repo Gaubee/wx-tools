@@ -146,12 +146,7 @@ const API = new Map<
           continue;
         }
         const snapshoot = new Date(
-          entry.entryname
-            .replace(".json", "")
-            .replace(
-              /(\d+)_(\d+)_(\d+)\-(\d+)_(\d+)_(\d+)/,
-              "$1-$2-$3 $4:$5:$6"
-            )
+          decodeURIComponent(entry.entryname.replace(".json", ""))
         ).valueOf();
         if (!snapshoot_filter(snapshoot)) {
           continue;

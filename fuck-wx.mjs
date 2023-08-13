@@ -172,11 +172,7 @@ const doFuck = async (writelog, writeend) => {
   );
   const filename = path.join(
     foldername,
-    new Date()
-      .toLocaleString()
-      .replace(/\//g, "_")
-      .replace(/:/g, "_")
-      .replace(/\s/g, "-") + ".json"
+    encodeURIComponent(new Date().toISOString()) + ".json"
   );
 
   const filecontent = {
