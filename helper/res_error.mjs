@@ -6,6 +6,7 @@ const html = String.raw;
  * @param {*} err
  */
 export const res_error = (res, err) => {
+  console.error(err);
   res.setHeader("Content-Type", "text/html");
   res.end(
     err instanceof Error
