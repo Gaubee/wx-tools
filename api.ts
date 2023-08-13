@@ -171,9 +171,9 @@ http
   .createServer(async (req, res) => {
     const origin = `https://${req.headers.host || "localhost"}`;
 
-    const reqUrl = new URL((req.url ?? "").replace("/api", ""), origin);
+    const reqUrl = new URL((req.url ?? "").replace("/api/", "/"), origin);
     for (const [url_pattern_input_path, hanlder] of API) {
-      const url_pattern = new URLPattern(url_pattern_input_path, origin);
+      const url_pattern = new URLPattern(new URL(url_pattern_input_path, origin));
       if (url_pattern.test(reqUrl)) {
         try {
           return await hanlder(req, res, reqUrl);
