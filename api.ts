@@ -169,23 +169,21 @@ const API = new Map<
 ]);
 http
   .createServer(async (req, res) => {
-    const reqUrl = new URL(
-      (req.url ?? "").replace("/api", ""),
-      `https://${req.headers.host || "localhost"}`
-    );
+    const origin = `https://${req.headers.host || "localhost"}`;
+
+    const reqUrl = new URL((req.url ?? "").replace("/api", ""), origin);
     for (const [url_pattern_input_path, hanlder] of API) {
-      const url_pattern = new URLPattern(
-        url_pattern_input_path,
-        "http://localhost"
-      );
+      const url_pattern = new URLPattern(url_pattern_input_path, origin);
       if (url_pattern.test(reqUrl)) {
         try {
-          await hanlder(req, res, reqUrl);
+          return await hanlder(req, res, reqUrl);
         } catch (err) {
           res_error(res, err);
         }
       }
     }
+    res.statusCode = 502;
+    res.end(`GG:${reqUrl}`);
   })
   .listen(port, "0.0.0.0", () => {
     console.log("https://codebeautify.org/jsonviewer");
