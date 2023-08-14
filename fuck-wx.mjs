@@ -318,7 +318,7 @@ http
         htmlContent = htmlContent.replace("CONTENT", content);
         if (token) {
           htmlContent += `
-            <script>window.addEventListener("load",()=>{new WebSocket(\`ws://\${location.hostname}/lifecycle?token=${token}\`)});</script>
+            <script>window.addEventListener("load",()=>{new WebSocket(\`ws://\${location.host}/lifecycle?token=${token}\`)});</script>
           `;
         }
         res.setHeader("Content-Type", "text/html");
