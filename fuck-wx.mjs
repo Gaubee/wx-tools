@@ -5,8 +5,10 @@ import fs from "node:fs";
 import path from "node:path";
 import qrcode from "npm:qrcode-terminal";
 import { setTimeout } from "node:timers/promises";
+import { EventEmitter } from "node:events";
 import isMobile from "npm:is-mobile";
 const __dirname = fileURLToPath(new URL("./", import.meta.url));
+const emitter = new EventEmitter();
 const qrcode_generate = (text, options = {}) => {
   return new Promise((resolve) => {
     qrcode.generate(text, options, resolve);
@@ -52,11 +54,25 @@ const doFuck = async (writelog, writeend) => {
   writelog("请使用手机微信摄像头扫码：");
   console.log(auto_login_url_2);
   writelog(await qrcode_generate(auto_login_url_2, { small: true }));
-  writeend();
+  writeend(token);
 
   let set_cookie = null;
+  let loopCount = 0;
+  let wxAuthLoginStop = false;
+  
+  const lifecycleOnClose = () => {
+    wxAuthLoginStop = true;
+  }
+  emitter.once(`lifecycle_close_${token}`, lifecycleOnClose);
+
   while (true) {
     await setTimeout(1000);
+    loopCount++;
+    if(loopCount > 60 || wxAuthLoginStop) {
+      console.log("____wxAuthLoginStop");
+      wxAuthLoginStop = false;
+      return;
+    }
     const auth_login_status_res = await fetch(
       `https://channels.weixin.qq.com/cgi-bin/mmfinderassistant-bin/auth/auth_login_status?token=${token}&timestamp=${Date.now()}&_log_finder_uin=&_log_finder_id=&scene=7&reqScene=7`,
       {
@@ -91,6 +107,8 @@ const doFuck = async (writelog, writeend) => {
       break;
     }
   }
+
+  emitter.off(`lifecycle_close_${token}`, lifecycleOnClose);
 
   // let set_cookie  =`sessionId=; pgv_pvid=9264243900; logout_page=dm_loginpage; dm_login_weixin_rem=; mm_lang=zh_CN; sessionid=BgAA5cb0UJ7%2FmVKNCvXRYq1P40WvIfWnRtMDSbTTLYfLUGa9Uh2PxFQn76dUGtY7qgInOW8VsmBAgPcW37LfMz0fxOUDCSLr4lE%3D; wxuin=466083118; promotewebsessionid=BgAAqyWEOyNYIQEcXvtWZRlzORe4%2BxftRPLxwdUV490sKAoEhz9%2BCDcgM9UIqbbay%2BX9vMlKQPwr0DJAPoyWFWmrKFTbkj0h1xY%3D`
 
@@ -188,6 +206,7 @@ const doFuck = async (writelog, writeend) => {
 };
 
 import http from "node:http";
+import { WebSocketServer } from "npm:ws";
 import { ListAllUrl, logAllUrl } from "./helper/all-ip.mjs";
 import { res_error } from "./helper/res_error.mjs";
 const html = String.raw;
@@ -294,19 +313,31 @@ http
           content += val + "\n";
         }
       },
-      () => {
-        if (req.url?.endsWith(".html")) {
-          res.setHeader("Content-Type", "text/html");
-        } else {
-          res.setHeader("Content-Type", "text/plant");
-        }
+      (token) => {
         content += "</pre>";
         htmlContent = htmlContent.replace("CONTENT", content);
+        if (token) {
+          htmlContent += `
+            <script>window.addEventListener("load",()=>{new WebSocket(\`ws://\${location.hostname}:3000/lifecycle?token=${token}\`)});</script>
+          `;
+        }
         res.setHeader("Content-Type", "text/html");
         res.end(htmlContent);
       }
     ).catch((err) => res_error(res, err));
   })
+  .on("upgrade", (request, socket, head) => {
+    const reqUrl = new URL(request.url ?? "", "http://localhost");
+    console.log("____socket", reqUrl);
+    if (reqUrl.pathname === "/lifecycle") {
+      wss.handleUpgrade(request, socket, head, (ws) => {
+        ws.on("close",()=>{
+          emitter.emit(`lifecycle_close_${reqUrl.searchParams.get("token")}`);
+        })
+      });
+    }
+  })
   .listen(port, "0.0.0.0", () => {
     logAllUrl(`http://localhost:${port}/index.html`);
   });
+const wss = new WebSocketServer({ noServer: true });
