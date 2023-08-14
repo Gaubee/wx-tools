@@ -3,26 +3,11 @@
   "remote": {},
   "npm": {
     "specifiers": {
-      "@types/node": "@types/node@18.16.19",
-      "adm-zip": "adm-zip@0.5.10",
-      "eventemitter2": "eventemitter2@6.4.9",
       "is-mobile": "is-mobile@4.0.0",
       "qrcode-terminal": "qrcode-terminal@0.12.0",
       "ws": "ws@8.13.0"
     },
     "packages": {
-      "@types/node@18.16.19": {
-        "integrity": "sha512-IXl7o+R9iti9eBW4Wg2hx1xQDig183jj7YLn8F7udNceyfkbn1ZxmzZXuak20gR40D7pIkIY1kYGx5VIGbaHKA==",
-        "dependencies": {}
-      },
-      "adm-zip@0.5.10": {
-        "integrity": "sha512-x0HvcHqVJNTPk/Bw8JbLWlWoo6Wwnsug0fnYYro1HBrjxZ3G7/AZk7Ahv8JwDe1uIcz8eBqvu86FuF1POiG7vQ==",
-        "dependencies": {}
-      },
-      "eventemitter2@6.4.9": {
-        "integrity": "sha512-JEPTiaOt9f04oa6NOkc4aH+nVp5I3wEjpHbIPqfgCdD5v5bUzy7xQqwcVO2aDQgOWhI28da57HksMrzK9HlRxg==",
-        "dependencies": {}
-      },
       "is-mobile@4.0.0": {
         "integrity": "sha512-mlcHZA84t1qLSuWkt2v0I2l61PYdyQDt4aG1mLIXF5FDMm4+haBCxCPYSr/uwqQNRk1MiTizn0ypEuRAOLRAew==",
         "dependencies": {}
