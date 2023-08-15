@@ -1,18 +1,15 @@
 //@ts-check
 import { fileURLToPath } from "node:url";
-import util from "node:util";
 import fs from "node:fs";
 import path from "node:path";
-import qrcode from "npm:qrcode-terminal";
+import qrcode from "npm:qrcode";
 import { setTimeout } from "node:timers/promises";
 import { EventEmitter } from "node:events";
 import isMobile from "npm:is-mobile";
 const __dirname = fileURLToPath(new URL("./", import.meta.url));
 const emitter = new EventEmitter();
-const qrcode_generate = (text, options = {}) => {
-  return new Promise((resolve) => {
-    qrcode.generate(text, options, resolve);
-  });
+const qrcode_generate = async (text, options = {}) => {
+  return await qrcode.toString(text, { margin:0 });
 };
 const doFuck = async (writelog, writeend) => {
   const auth_login_code_res = await fetch(
@@ -46,6 +43,7 @@ const doFuck = async (writelog, writeend) => {
   const auth_login_code = await auth_login_code_res.json();
   console.log(auth_login_code);
   const token = auth_login_code.data.token;
+  
   const auto_login_url_1 = `https://channels.weixin.qq.com/mobile/confirm_login.html?token=${token}`;
   const auto_login_url_2 = `https://channels.weixin.qq.com/promote/pages/mobile_login?token=${token}`;
   // writelog("机构管理扫这个：");
@@ -146,8 +144,9 @@ const doFuck = async (writelog, writeend) => {
   const data_map = new Map();
 
   const pageSize = 20;
+  let page = 1;
   while (true) {
-    let page = 1;
+    page++;
     var post_list_res = await fetch(
       "https://channels.weixin.qq.com/cgi-bin/mmfinderassistant-bin/post/post_list",
       {
@@ -166,14 +165,14 @@ const doFuck = async (writelog, writeend) => {
           Referer: "https://channels.weixin.qq.com/platform",
           "Referrer-Policy": "strict-origin-when-cross-origin",
         },
-        body: `{\"pageSize\":${pageSize},\"currentPage\":1,\"timestamp\":\"${Date.now()}\",\"_log_finder_uin\":\"\",\"_log_finder_id\":\"v2_060000231003b20faec8c7e0881ac5d6cc01eb31b077611492d1386f86eeaa6922b5f8215b22@finder\",\"rawKeyBuff\":null,\"pluginSessionId\":null,\"scene\":7,\"reqScene\":7}`,
+        body: `{\"pageSize\":${pageSize},\"currentPage\":${page},\"timestamp\":\"${Date.now()}\",\"_log_finder_uin\":\"\",\"_log_finder_id\":\"v2_060000231003b20faec8c7e0881ac5d6cc01eb31b077611492d1386f86eeaa6922b5f8215b22@finder\",\"rawKeyBuff\":null,\"pluginSessionId\":null,\"scene\":7,\"reqScene\":7}`,
         method: "POST",
       }
     );
 
     const post_list = await post_list_res.json();
 
-    console.log(post_list);
+    console.log("post_list", post_list);
 
     for (const post of post_list.data.list) {
       data_map.set(post.objectId, post);
@@ -207,7 +206,7 @@ const doFuck = async (writelog, writeend) => {
 
 import http from "node:http";
 import { WebSocketServer } from "npm:ws";
-import { ListAllUrl, logAllUrl } from "./helper/all-ip.mjs";
+import { logAllUrl } from "./helper/all-ip.mjs";
 import { res_error } from "./helper/res_error.mjs";
 const html = String.raw;
 const port = 3000;
