@@ -201,11 +201,7 @@ export type UserInfo = {
 };
 
 export type QueryResult = Array<{
-  user: {
-    errCode: number;
-    errMsg: string;
-    data: UserInfo;
-  };
+  user: UserInfo;
   snapshots: Array<{
     snapshot: number;
     list: Array<PostItem>;
