@@ -159,7 +159,7 @@ const API = new Map<
           list: post_list.filter((post: PostItem) => item_filter(post)),
         };
         (result[author] ??= {
-          user: user_info,
+          user: user_info.data ? user_info.data : user_info,
           snapshoots: [],
         }).snapshoots.push(data);
       }
