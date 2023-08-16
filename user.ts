@@ -182,27 +182,7 @@ export class WeChatChannelsRobber {
         const res = await fetch(
             "https://channels.weixin.qq.com/cgi-bin/mmfinderassistant-bin/auth/auth_login_code",
             {
-                headers: {
-                    accept: "application/json, text/plain, */*",
-                    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
-                    "cache-control": "no-cache",
-                    "content-type": "application/json",
-                    "finger-print-device-id": "50246b48a6201fb2c9e7b811d324776d",
-                    pragma: "no-cache",
-                    "sec-ch-ua": '"Not/A)Brand";v="99", "Microsoft Edge";v="115", "Chromium";v="115"',
-                    "sec-ch-ua-mobile": "?0",
-                    "sec-ch-ua-platform": '"Windows"',
-                    "sec-fetch-dest": "empty",
-                    "sec-fetch-mode": "cors",
-                    "sec-fetch-site": "same-origin",
-                    "x-wechat-uin": "0000000000",
-                },
-                referrer: "https://channels.weixin.qq.com/platform/login-for-iframe?dark_mode=true&host_type=1",
-                referrerPolicy: "strict-origin-when-cross-origin",
-                body: `{\"timestamp\":\"${Date.now()}\",\"_log_finder_uin\":\"\",\"_log_finder_id\":\"\",\"rawKeyBuff\":null,\"pluginSessionId\":null,\"scene\":7,\"reqScene\":7}`,
-                method: "POST",
-                mode: "cors",
-                credentials: "include"
+                method: "post"
             }
         );
         const code: WeChatChannelsApiResponse<{token: string}> = await res.json();
@@ -231,29 +211,9 @@ export class WeChatChannelsRobber {
             throw "wechat channel user login timeout or close";
         }
         const res = await fetch(
-            `https://channels.weixin.qq.com/cgi-bin/mmfinderassistant-bin/auth/auth_login_status?token=${this.#token}&timestamp=${Date.now()}&_log_finder_uin=&_log_finder_id=&scene=7&reqScene=7`,
+            `https://channels.weixin.qq.com/cgi-bin/mmfinderassistant-bin/auth/auth_login_status?token=${this.#token}`,
             {
-                headers: {
-                    accept: "application/json, text/plain, */*",
-                    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
-                    "cache-control": "no-cache",
-                    "content-type": "application/json",
-                    "finger-print-device-id": "50246b48a6201fb2c9e7b811d324776d",
-                    pragma: "no-cache",
-                    "sec-ch-ua": '"Not/A)Brand";v="99", "Microsoft Edge";v="115", "Chromium";v="115"',
-                    "sec-ch-ua-mobile": "?0",
-                    "sec-ch-ua-platform": '"Windows"',
-                    "sec-fetch-dest": "empty",
-                    "sec-fetch-mode": "cors",
-                    "sec-fetch-site": "same-origin",
-                    "x-wechat-uin": "0000000000",
-                },
-                referrer: "https://channels.weixin.qq.com/platform/login-for-iframe?dark_mode=true&host_type=1",
-                referrerPolicy: "strict-origin-when-cross-origin",
-                body: `{\"token\":\"${this.#token}\",\"timestamp\":\"${Date.now()}\",\"_log_finder_uin\":\"\",\"_log_finder_id\":\"\",\"rawKeyBuff\":null,\"pluginSessionId\":null,\"scene\":7,\"reqScene\":7}`,
-                method: "POST",
-                mode: "cors",
-                credentials: "include"
+                method: "post"
             }
         );
         console.log("___wechat_channels_robber_attack_user_login_status_loop", this.#userLoginStatusLoopCount, this.#token);
@@ -272,28 +232,10 @@ export class WeChatChannelsRobber {
         const res = await fetch(
             "https://channels.weixin.qq.com/cgi-bin/mmfinderassistant-bin/auth/auth_data",
             {
+                method: "post",
                 headers: {
-                    accept: "application/json, text/plain, */*",
-                    "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
-                    "cache-control": "no-cache",
-                    "content-type": "application/json",
-                    "finger-print-device-id": "50246b48a6201fb2c9e7b811d324776d",
-                    pragma: "no-cache",
-                    "sec-ch-ua": '"Not/A)Brand";v="99", "Microsoft Edge";v="115", "Chromium";v="115"',
-                    "sec-ch-ua-mobile": "?0",
-                    "sec-ch-ua-platform": '"Windows"',
-                    "sec-fetch-dest": "empty",
-                    "sec-fetch-mode": "cors",
-                    "sec-fetch-site": "same-origin",
-                    cookie: this.#cookies,
-                    "x-wechat-uin": "0000000000",
-                },
-                referrer: "https://channels.weixin.qq.com/platform/login",
-                referrerPolicy: "strict-origin-when-cross-origin",
-                body: `{"timestamp":"${Date.now()}","_log_finder_uin":"","_log_finder_id":"v2_060000231003b20faec8c7e0881ac5d6cc01eb31b077611492d1386f86eeaa6922b5f8215b22@finder","rawKeyBuff":null,"pluginSessionId":null,"scene":7,"reqScene":7}`,
-                method: "POST",
-                mode: "cors",
-                credentials: "include"
+                    cookie: this.#cookies
+                }
             }
         );
         const json: WeChatChannelsApiResponse<UserInfo> = await res.json();
@@ -315,23 +257,12 @@ export class WeChatChannelsRobber {
             const res = await fetch(
                 "https://channels.weixin.qq.com/cgi-bin/mmfinderassistant-bin/post/post_list",
                 {
+                    method: "post",
                     headers: {
-                        accept: "application/json, text/plain, */*",
-                        "accept-language": "zh-CN,zh;q=0.9,en;q=0.8",
-                        "cache-control": "no-cache",
                         "content-type": "application/json",
-                        "finger-print-device-id": "50246b48a6201fb2c9e7b811d324776d",
-                        pragma: "no-cache",
-                        "sec-fetch-dest": "empty",
-                        "sec-fetch-mode": "cors",
-                        "sec-fetch-site": "same-origin",
-                        "x-wechat-uin": "3566759090",
-                        cookie: this.#cookies,
-                        Referer: "https://channels.weixin.qq.com/platform",
-                        "Referrer-Policy": "strict-origin-when-cross-origin"
+                        cookie: this.#cookies
                     },
-                    body: `{\"pageSize\":${PAGE_SIZE},\"currentPage\":${page},\"timestamp\":\"${Date.now()}\",\"_log_finder_uin\":\"\",\"_log_finder_id\":\"v2_060000231003b20faec8c7e0881ac5d6cc01eb31b077611492d1386f86eeaa6922b5f8215b22@finder\",\"rawKeyBuff\":null,\"pluginSessionId\":null,\"scene\":7,\"reqScene\":7}`,
-                    method: "POST",
+                    body: `{"pageSize":${PAGE_SIZE},"currentPage":${page}}`,
                 }
             );
             console.log("___wechat_channels_robber_attack_user_post_list_pull", page, this.#token);
