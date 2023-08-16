@@ -146,7 +146,6 @@ const doFuck = async (writelog, writeend) => {
   const pageSize = 20;
   let page = 1;
   while (true) {
-    page++;
     var post_list_res = await fetch(
       "https://channels.weixin.qq.com/cgi-bin/mmfinderassistant-bin/post/post_list",
       {
@@ -169,6 +168,7 @@ const doFuck = async (writelog, writeend) => {
         method: "POST",
       }
     );
+    page++;
 
     const post_list = await post_list_res.json();
 
