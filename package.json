@@ -2,6 +2,7 @@
     "name": "wx-tools",
     "scripts": {
         "user": "deno run -A --watch user.ts",
-        "admin": "deno run -A --watch api.ts"
+        "admin": "deno run -A --watch admin.ts",
+        "api": "deno run -A --watch api.ts"
     }
 }
