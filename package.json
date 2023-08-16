@@ -1,7 +1,7 @@
 {
     "name": "wx-tools",
     "scripts": {
-        "user": "deno run -A --watch fuck-wx.mjs",
+        "user": "deno run -A --watch user.ts",
         "admin": "deno run -A --watch api.ts"
     }
 }

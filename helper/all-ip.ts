@@ -8,7 +8,7 @@ export const all_ip = [
  *
  * @param {URL|string} url
  */
-export function* ListAllUrl(url) {
+export function* ListAllUrl(url: string) {
   if (typeof url === "string") {
     url = new URL(url);
   }
@@ -23,7 +23,7 @@ export function* ListAllUrl(url) {
  *
  * @param {URL|string} input_url
  */
-export const logAllUrl = (input_url) => {
+export const logAllUrl = (input_url: string) => {
   let first = true;
   for (const url of ListAllUrl(input_url)) {
     if (first) {
@@ -33,4 +33,4 @@ export const logAllUrl = (input_url) => {
       console.log("  " + url.href);
     }
   }
-};
+}

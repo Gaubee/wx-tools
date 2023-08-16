@@ -6,10 +6,10 @@ import path from "node:path";
 import http from "node:http";
 import { Buffer } from "node:buffer";
 import { setTimeout } from "node:timers/promises";
-import { ListAllUrl, logAllUrl } from "./helper/all-ip.mjs";
+import { ListAllUrl, logAllUrl } from "./helper/all-ip.ts";
 import AdmZip from "npm:adm-zip";
-import { res_error } from "./helper/res_error.mjs";
-import { res_json } from "./helper/res_json.mjs";
+import { res_error } from "./helper/res_error.ts";
+import { res_json } from "./helper/res_json.ts";
 import { PostItem, QueryResult } from "./type.d.ts";
 import { WalkFile, WalkDir } from "./helper/WalkFs.ts";
 

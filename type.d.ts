@@ -210,3 +210,9 @@ export type QueryResult = Array<{
 }>;
 
 export type AuthorsResult = Array<string>;
+
+export type WeChatChannelsApiResponse<T> = {
+  data: T;
+  errCode: number;
+  errMsg: string;
+}

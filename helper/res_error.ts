@@ -1,11 +1,13 @@
 //@ts-check
+import type http from "node:http";
+
 const html = String.raw;
 /**
  *
  * @param {import("node:http").OutgoingMessage} res
  * @param {*} err
  */
-export const res_error = (res, err) => {
+export const res_error = (res: http.OutgoingMessage, err: any) => {
   console.error(err);
   res.setHeader("Content-Type", "text/html");
   res.end(
