@@ -139,8 +139,8 @@ export class WeChatChannelsToolsAdmin {
             
             (result[author] ??= {
                 user: user_info.data ? user_info.data : user_info,
-                snapshot: [],
-            }).snapshot.push({
+                snapshots: [],
+            }).snapshots.push({
                 snapshot,
                 list: post_list.filter(post => itemFilter(post))
             });
