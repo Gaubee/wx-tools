@@ -202,10 +202,7 @@ export type UserInfo = {
 
 export type QueryResult = Array<{
   user: UserInfo;
-  snapshots: Array<{
-    snapshot: number;
-    list: Array<PostItem>;
-  }>;
+  list: Array<PostItem>;
 }>;
 
 export type AuthorsResult = Array<string>;

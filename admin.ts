@@ -137,13 +137,18 @@ export class WeChatChannelsToolsAdmin {
                 post_list: PostItem[];
             }
             
-            (result[author] ??= {
+            result[author] ??= {
                 user: user_info.data ? user_info.data : user_info,
-                snapshots: [],
-            }).snapshots.push({
-                snapshot,
-                list: post_list.filter(post => itemFilter(post))
-            });
+                list: []
+            }
+            for(let postItem of post_list.filter(post => itemFilter(post))) {
+                const index = result[author].list.findIndex(post => post.objectId === postItem.objectId);
+                if(~index) {
+                    result[author].list[index] = postItem;
+                } else {
+                    result[author].list.push(postItem);
+                }
+            }
         }
         const json = [...Object.values(result)];
         console.log("___api_query_finish", json.length);
