@@ -1,4 +1,5 @@
 import http from "node:http";
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { logAllUrl } from "./helper/all-ip.ts";
@@ -23,6 +24,9 @@ export class WeChatChannelsToolsAdmin {
     ]);
 
     constructor() {
+        fs.mkdirSync(WeChatChannelsToolsAdmin.#DATA_DIR, {
+            recursive: true,
+        });
         this.#http = http.createServer(this.#httpRequestListener.bind(this))
                          .listen(HTTP_PORT, "0.0.0.0", this.#httpListeningListener.bind(this));
     }
