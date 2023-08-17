@@ -37,7 +37,7 @@ export class WeChatChannelsToolsAdmin {
     ) {
         console.log("___request_listener", req.url);
         const origin = `https://${req.headers.host || "localhost"}`;
-        const reqUrl = new URL((req.url ?? "").replace("/api/", "/"), origin);
+        const reqUrl = new URL((req.url ?? "").replace("/api-admin/", "/"), origin);
         for (const [route, handler] of this.#api) {
             const urlPattern = new URLPattern(route, origin);
             if (urlPattern.test(reqUrl)) {
