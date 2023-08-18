@@ -1,19 +1,25 @@
 import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
+import minimist from "npm:minimist";
+import WebSocket from "npm:ws";
+import compressing from "npm:compressing";
 import { fileURLToPath } from "node:url";
 import { logAllUrl } from "./helper/all-ip.ts";
 import { res_error } from "./helper/res_error.ts";
 import { res_json } from "./helper/res_json.ts";
 import { WalkDir, WalkFile } from "./helper/WalkFs.ts";
-import type { UserInfo, PostItem, QueryResult } from "./type.d.ts";
+import { Buffer } from "node:buffer";
+import type { UserInfo, PostItem, QueryResult, StatusResult } from "./type.d.ts";
 
 const HTTP_PORT = 3002;
 
 const __dirname = fileURLToPath(new URL("./", import.meta.url));
 
+const DATA_DIR = path.join(__dirname, "data");
+const DOWNLOAD_DIR = path.join(__dirname, "download");
+
 export class WeChatChannelsToolsAdmin {
-    static readonly #DATA_DIR = path.join(__dirname, "data");
     #http!: http;
     #api = new Map<string, (req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) => void>([
         ["/authors", this.#apiGetAuthors],
@@ -21,7 +27,7 @@ export class WeChatChannelsToolsAdmin {
     ]);
 
     constructor() {
-        fs.mkdirSync(WeChatChannelsToolsAdmin.#DATA_DIR, {
+        fs.mkdirSync(DATA_DIR, {
             recursive: true,
         });
         this.#http = http
@@ -63,7 +69,7 @@ export class WeChatChannelsToolsAdmin {
      */
     #apiGetAuthors(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
         console.log("___api_get_authors_start");
-        const json = [...WalkDir(WeChatChannelsToolsAdmin.#DATA_DIR)].map((entry) => entry.entryname);
+        const json = [...WalkDir(DATA_DIR)].map((entry) => entry.entryname);
         console.log("___api_get_authors_finish", json.length);
         res_json(res, json);
     }
@@ -107,7 +113,7 @@ export class WeChatChannelsToolsAdmin {
         };
         const result: Record<string, QueryResult[number]> = {};
         console.log("___api_query_start");
-        for (const entry of WalkFile(WeChatChannelsToolsAdmin.#DATA_DIR)) {
+        for (const entry of WalkFile(DATA_DIR)) {
             const author = path.parse(entry.entrydir).base;
             if (!authorFilter(author)) {
                 continue;
@@ -174,7 +180,98 @@ export class WeChatChannelsToolsAdmin {
     }
 }
 
+export interface DataPullOptions {
+    wsUrl: string;
+    api: string;
+}
+
+export class WeChatChannelsToolsAdminDataPull {
+    #ws!: WebSocket;
+    #downloadLastTime = 0;
+    #downloadQueues: string[] = [];
+    #options!: DataPullOptions;
+    
+    constructor(
+        options: DataPullOptions = {}
+    ) {
+        fs.mkdirSync(DOWNLOAD_DIR, {
+            recursive: true,
+        });
+        this.#options = options;
+        this.#init();
+    }
+    
+    async #init() {
+        this.#downloadLastTime = await this.#getDownloadLastTime();
+        this.#ws = new WebSocket(this.#options.wsUrl, {
+            perMessageDeflate: false
+        });
+        this.#ws.on("open", this.#wsOpenListener);
+        this.#ws.on("message", this.#wsMessageListener.bind(this));
+    }
+
+    /**
+     * 获取最后一次同步数据的时间
+     * @private
+     */
+    async #getDownloadLastTime() {
+        const downloadList = [...WalkDir(DOWNLOAD_DIR)].map(entry => +entry.entryname);
+        if(downloadList.length) {
+            return downloadList.sort((a, b) => b - a)[0];
+        }
+        // 本地没有就从服务器取最新时间
+        const res = await fetch(new URL("/api/status", this.#options.api));
+        const json = await res.json() as StatusResult;
+        return json.currentTime;
+    }
+    
+    #wsOpenListener() {
+        console.log("___data_pull_socket_open");
+    }
+    
+    #wsMessageListener(data: Buffer) {
+        const timestamp = data.toString();
+        console.log("___data_pull_socket_message", timestamp);
+        if(this.#downloadQueues.length) {
+            this.#downloadQueues.push(timestamp);
+        } else {
+            this.#downloadQueues.push(timestamp);
+            this.#dataDownload();
+        }
+    }
+
+    /**
+     * 同步数据
+     * @private
+     */
+    async #dataDownload() {
+        const isoTime = this.#downloadQueues.shift();
+        const timestamp = new Date(isoTime).valueOf();
+        const downloadUrl = new URL("/api/download", this.#options.api);
+        const timeRange = `${this.#downloadLastTime}-${timestamp}`;
+        downloadUrl.searchParams.append("snapshot", timeRange);
+        console.log("___data_pull_socket_download", this.#downloadLastTime, timestamp);
+        const res = await fetch(downloadUrl.href);
+        const zipPath = path.join(DOWNLOAD_DIR, `${encodeURIComponent(isoTime)}.zip`);
+        await fs.promises.writeFile(zipPath, Buffer.from(await res.arrayBuffer()), "binary");
+        await compressing.zip.uncompress(zipPath, DATA_DIR);
+        this.#downloadLastTime = timestamp;
+        if(this.#downloadQueues.length) {
+            this.#dataDownload();
+        }
+    }
+}
+
 export default function startup() {
+    const args = minimist(Deno.args);
     new WeChatChannelsToolsAdmin();
+    const wsUrl = args["data-ws"];
+    const api = args["api"];
+    if(wsUrl && api) {
+        new WeChatChannelsToolsAdminDataPull({
+            wsUrl,
+            api
+        });
+    }
 }
 startup();

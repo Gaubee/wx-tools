@@ -212,3 +212,8 @@ export type WeChatChannelsApiResponse<T> = {
     errCode: number;
     errMsg: string;
 };
+
+export type StatusResult = {
+    currentTime: number;
+    currentTimeISO: string;
+};

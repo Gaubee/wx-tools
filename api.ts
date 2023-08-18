@@ -1,17 +1,18 @@
 import http from "node:http";
-import type { RequestListener, IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import fs from "node:fs";
 import AdmZip from "npm:adm-zip";
-import { WebSocketServer, WebSocket } from "npm:ws";
+import { WebSocketServer } from "npm:ws";
 import { EventEmitter } from "node:events";
 import { fileURLToPath } from "node:url";
 import { logAllUrl } from "./helper/all-ip.ts";
 import { res_error } from "./helper/res_error.ts";
 import { WalkFile } from "./helper/WalkFs.ts";
 import { debounce } from "./helper/utils.ts";
+import { res_json } from "./helper/res_json.ts";
 import type { Duplex } from "node:stream";
 import type { Buffer } from "node:buffer";
+import type { StatusResult } from "./type.d.ts";
 
 const HTTP_PORT = 3001;
 const EMITTER_KEY_WATCH_DATA_CHANGE = Symbol("watch_data_change");
@@ -25,13 +26,15 @@ export class WeChatChannelsToolsServer {
     #http!: http;
     #api = new Map<string, (req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) => void>([
         ["/download?*", this.#apiDownload.bind(this)],
+        ["/status", this.#apiStatus],
     ]);
-    #dataWatcher = new WeChatChannelsToolsDataWatcher();
+    #dataWatcher!: WeChatChannelsToolsDataWatcher;
 
     constructor() {
         fs.mkdirSync(DATA_DIR, {
             recursive: true,
         });
+        this.#dataWatcher = new WeChatChannelsToolsDataWatcher();
         this.#http = http
             .createServer(this.#httpRequestListener.bind(this))
             .on("upgrade", this.#onHttpUpgrade.bind(this))
@@ -94,6 +97,21 @@ export class WeChatChannelsToolsServer {
     }
 
     /**
+     * 查询基本状态
+     * @param req
+     * @param res
+     * @param params
+     * @private
+     */
+    #apiStatus(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
+        const time = new Date();
+        res_json(res, {
+            currentTime: time.getTime(),
+            currentTimeISO: time.toISOString(),
+        } as StatusResult);
+    }
+    
+    /**
      * 整数/范围参数过滤器
      * @param key 参数Key
      * @private
@@ -135,7 +153,7 @@ export class WeChatChannelsToolsDataWatcher {
         this.#ws.handleUpgrade(req, socket, head, this.#wsConnectionListener);
     }
     #wsConnectionListener(socket) {
-        const onDataChange = (time: number) => {
+        const onDataChange = (time: string) => {
             socket.send(time);
         };
         emitter.on(EMITTER_KEY_WATCH_DATA_CHANGE, onDataChange);
@@ -152,10 +170,10 @@ export class WeChatChannelsToolsDataWatcher {
         console.log("___data_watcher_on");
         const watcher = Deno.watchFs(DATA_DIR);
         const emit = debounce(() => {
-            const time = Date.now().toString();
+            const time = new Date().toISOString();
             console.log("___data_watcher_change", time);
             emitter.emit(EMITTER_KEY_WATCH_DATA_CHANGE, time);
-        }, 1000);
+        }, 200);
         for await (const event of watcher) {
             // 目前只需要监听文件新增就可以了
             if (event.kind === "create") {

@@ -1,5 +1,6 @@
 node_modules
 /data
+/download
 .idea
 /tmp
 deno.lock
