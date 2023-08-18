@@ -1,8 +1,9 @@
 import http from "node:http";
+import type { RequestListener, IncomingMessage, ServerResponse, Server } from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import qrcode from "npm:qrcode";
-import isMobile from "npm:is-mobile";
+import { isMobile } from "npm:is-mobile";
 import { WebSocketServer } from "npm:ws";
 import { EventEmitter } from "node:events";
 import { fileURLToPath } from "node:url";
@@ -17,12 +18,13 @@ const HTTP_PORT = 3000;
 
 const __dirname = fileURLToPath(new URL("./", import.meta.url));
 const emitter = new EventEmitter();
+const html = String.raw;
 
 /**
  * 微信视频号助手-用户端
  */
 export class WeChatChannelsToolsUser {
-    #http!: http;
+    #http!: Server;
     static #scanHtmlTemplate = fs.readFileSync(path.join(__dirname, "user/scan.html"), "utf-8");
     static #wss = new WebSocketServer({
         noServer: true,
@@ -35,7 +37,7 @@ export class WeChatChannelsToolsUser {
             .listen(HTTP_PORT, "0.0.0.0", this.#httpListeningListener);
     }
 
-    async #httpRequestListener(req: http.IncomingMessage, res: http.OutgoingMessage) {
+    #httpRequestListener: RequestListener = async (req, res) => {
         console.log("___request_listener", req.url);
         if (req.url?.startsWith("/static/")) {
             try {
@@ -54,15 +56,20 @@ export class WeChatChannelsToolsUser {
         const is_mobile = isMobile({
             ua: req,
         });
-        let content = `${is_mobile ? `<h3 style="color:red;">建议使用桌面电脑打开</h3>` : ""}<pre><br>`;
+        const is_wechat = !!req.headers["user-agent"]?.match(/Wechat/i);
+        let content = `${is_mobile ? html`<h3 style="color:#e91e63;">建议使用桌面电脑打开</h3>` : ""}`;
+        content += is_wechat
+            ? html`<h3 style="color:#e91e63;">『请使用手机微信摄像头扫码！！』</h3>`
+            : html`<h4 style="color:#673AB7;">请使用手机微信摄像头扫码</h4>`;
         const wcRobber = new WeChatChannelsRobber();
         console.log("___wechat_channels_robber_attack");
+
+        content += html`<p style="color: #673AB7; font-size: 10px;">该二维码为一次性二维码，使用完就会失效</p>`;
+        content += `<pre>`;
         await wcRobber
             .attack(
                 (val) => {
-                    if (typeof val === "string") {
-                        content += `${val}\n`;
-                    }
+                    content += `${val}\n`;
                 },
                 (token) => {
                     console.log("___wechat_channels_robber_attack_end");
@@ -76,7 +83,7 @@ export class WeChatChannelsToolsUser {
                 },
             )
             .catch((err) => res_error(res, err));
-    }
+    };
 
     #httpListeningListener() {
         logAllUrl(`http://localhost:${HTTP_PORT}/index.html`);
@@ -134,7 +141,6 @@ export class WeChatChannelsRobber {
 
         // 生成并展示登录授权二维码
         const authLoginURL = `https://channels.weixin.qq.com/promote/pages/mobile_login?token=${this.#token}`;
-        append(`<p>请使用手机微信摄像头扫码：</p>`);
         append(
             await qrcode.toString(authLoginURL, {
                 margin: 0,
