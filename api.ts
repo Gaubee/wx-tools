@@ -26,7 +26,7 @@ export class WeChatChannelsToolsServer {
         string,
         (req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) => void
     >([
-        ["/download", this.#apiDownload]
+        ["/download?*", this.#apiDownload.bind(this)]
     ]);
     #dataWatcher = new WeChatChannelsToolsDataWatcher();
 
@@ -91,13 +91,38 @@ export class WeChatChannelsToolsServer {
         res: http.OutgoingMessage,
         params: URLSearchParams
     ) {
+        const snapshotFilter = this.#toNumberRangeFilter(params.get("snapshot"));
         const zip = new AdmZip();
         for (const entry of WalkFile(DATA_DIR)) {
+            const snapshot = new Date(
+                decodeURIComponent(entry.entryname.replace(".json", ""))
+            ).valueOf();
+            if (!snapshotFilter(snapshot)) {
+                continue;
+            }
             const relativePath = path.relative(DATA_DIR, entry.entrypath);
             zip.addFile(relativePath, entry.readBinary());
         }
         res.setHeader("Content-Type", "application/zip");
         res.end(zip.toBuffer());
+    }
+
+    /**
+     * 整数/范围参数过滤器
+     * @param key 参数Key
+     * @private
+     */
+    #toNumberRangeFilter(key: string | null) {
+        const range = key?.split("-")
+        .map(Number)
+        .filter(v => !Number.isNaN(v))
+        .slice(0, 2) ?? [-Infinity, +Infinity];
+        if (range.length === 0) {
+            range.push(-Infinity, +Infinity);
+        } else if (range.length === 1) {
+            range.push(range[0]);
+        }
+        return (num: number) => range[0] <= num && num <= range[1];
     }
 }
 
