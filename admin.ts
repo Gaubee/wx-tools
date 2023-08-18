@@ -121,7 +121,7 @@ export class WeChatChannelsToolsAdmin {
         const result: Record<string, QueryResult[number]> = {};
         console.log("___api_query_start");
         for (const entry of WalkFile(WeChatChannelsToolsAdmin.#DATA_DIR)) {
-            const author = path.parse(entry.entrydir).name;
+            const author = path.parse(entry.entrydir).base;
             if (!authorFilter(author)) {
                 continue;
             }
