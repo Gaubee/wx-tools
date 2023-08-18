@@ -6,11 +6,11 @@
 export function debounce(handler: Function, time: number) {
     let timer = 0;
     return function () {
-        if(timer) {
+        if (timer) {
             clearTimeout(timer);
         }
         timer = setTimeout(handler, time);
-    }
+    };
 }
 
 /**
@@ -21,7 +21,7 @@ export function debounce(handler: Function, time: number) {
 export function throttle(handler: Function, time: number) {
     let valid = true;
     return function () {
-        if(!valid) {
+        if (!valid) {
             return false;
         }
         valid = false;
@@ -29,5 +29,5 @@ export function throttle(handler: Function, time: number) {
             handler();
             valid = true;
         }, time);
-    }
+    };
 }

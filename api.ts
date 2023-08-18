@@ -1,8 +1,9 @@
 import http from "node:http";
+import type { RequestListener, IncomingMessage, ServerResponse } from "node:http";
 import path from "node:path";
 import fs from "node:fs";
 import AdmZip from "npm:adm-zip";
-import { WebSocketServer } from "npm:ws";
+import { WebSocketServer, WebSocket } from "npm:ws";
 import { EventEmitter } from "node:events";
 import { fileURLToPath } from "node:url";
 import { logAllUrl } from "./helper/all-ip.ts";
@@ -22,11 +23,8 @@ const DATA_DIR = path.join(__dirname, "data");
 
 export class WeChatChannelsToolsServer {
     #http!: http;
-    #api = new Map<
-        string,
-        (req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) => void
-    >([
-        ["/download?*", this.#apiDownload.bind(this)]
+    #api = new Map<string, (req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) => void>([
+        ["/download?*", this.#apiDownload.bind(this)],
     ]);
     #dataWatcher = new WeChatChannelsToolsDataWatcher();
 
@@ -34,15 +32,13 @@ export class WeChatChannelsToolsServer {
         fs.mkdirSync(DATA_DIR, {
             recursive: true,
         });
-        this.#http = http.createServer(this.#httpRequestListener.bind(this))
-                         .on("upgrade", this.#onHttpUpgrade.bind(this))
-                         .listen(HTTP_PORT, "0.0.0.0", this.#httpListeningListener.bind(this));
+        this.#http = http
+            .createServer(this.#httpRequestListener.bind(this))
+            .on("upgrade", this.#onHttpUpgrade.bind(this))
+            .listen(HTTP_PORT, "0.0.0.0", this.#httpListeningListener.bind(this));
     }
 
-    async #httpRequestListener(
-        req: http.IncomingMessage,
-        res: http.OutgoingMessage
-    ) {
+    async #httpRequestListener(req: http.IncomingMessage, res: http.OutgoingMessage) {
         console.log("___request_listener", req.url);
         const origin = `https://${req.headers.host || "localhost"}`;
         const reqUrl = new URL((req.url ?? "").replace("/api/", "/"), origin);
@@ -61,18 +57,14 @@ export class WeChatChannelsToolsServer {
         res.end();
     }
 
-    #onHttpUpgrade(
-        req: http.IncomingMessage,
-        socket: Duplex,
-        head: Buffer
-    ) {
+    #onHttpUpgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
         const reqUrl = new URL((req.url ?? "").replace("/api/", "/"), "http://localhost");
         console.log("___watch_socket", req.url);
         if (reqUrl.pathname === "/watch") {
             this.#dataWatcher.handleUpgrade(req, socket, head);
         }
     }
-    
+
     #httpListeningListener() {
         for (const route of this.#api.keys()) {
             logAllUrl(`http://localhost:${HTTP_PORT}${route}`);
@@ -86,17 +78,11 @@ export class WeChatChannelsToolsServer {
      * @param params
      * @private
      */
-    #apiDownload(
-        req: http.IncomingMessage,
-        res: http.OutgoingMessage,
-        params: URLSearchParams
-    ) {
+    #apiDownload(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
         const snapshotFilter = this.#toNumberRangeFilter(params.get("snapshot"));
         const zip = new AdmZip();
         for (const entry of WalkFile(DATA_DIR)) {
-            const snapshot = new Date(
-                decodeURIComponent(entry.entryname.replace(".json", ""))
-            ).valueOf();
+            const snapshot = new Date(decodeURIComponent(entry.entryname.replace(".json", ""))).valueOf();
             if (!snapshotFilter(snapshot)) {
                 continue;
             }
@@ -113,10 +99,11 @@ export class WeChatChannelsToolsServer {
      * @private
      */
     #toNumberRangeFilter(key: string | null) {
-        const range = key?.split("-")
-        .map(Number)
-        .filter(v => !Number.isNaN(v))
-        .slice(0, 2) ?? [-Infinity, +Infinity];
+        const range = key
+            ?.split("-")
+            .map(Number)
+            .filter((v) => !Number.isNaN(v))
+            .slice(0, 2) ?? [-Infinity, +Infinity];
         if (range.length === 0) {
             range.push(-Infinity, +Infinity);
         } else if (range.length === 1) {
@@ -131,9 +118,9 @@ export class WeChatChannelsToolsServer {
  */
 export class WeChatChannelsToolsDataWatcher {
     #ws = new WebSocketServer({
-        noServer: true
+        noServer: true,
     });
-    
+
     constructor() {
         this.#fileWatchListener();
     }
@@ -144,19 +131,15 @@ export class WeChatChannelsToolsDataWatcher {
      * @param socket
      * @param head
      */
-    public handleUpgrade(
-        req: http.IncomingMessage,
-        socket: Duplex,
-        head: Buffer
-    ) {
+    public handleUpgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
         this.#ws.handleUpgrade(req, socket, head, this.#wsConnectionListener);
     }
     #wsConnectionListener(socket) {
         const onDataChange = (time: number) => {
             socket.send(time);
-        }
+        };
         emitter.on(EMITTER_KEY_WATCH_DATA_CHANGE, onDataChange);
-        socket.on("close",()=> {
+        socket.on("close", () => {
             emitter.off(EMITTER_KEY_WATCH_DATA_CHANGE, onDataChange);
         });
     }
@@ -175,7 +158,7 @@ export class WeChatChannelsToolsDataWatcher {
         }, 1000);
         for await (const event of watcher) {
             // 目前只需要监听文件新增就可以了
-            if(event.kind === "create") {
+            if (event.kind === "create") {
                 emit();
             }
         }

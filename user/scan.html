@@ -1,77 +1,77 @@
 <!DOCTYPE html>
 <html lang="zh-cn">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>数据提交平台</title>
-    <style>
-        html,
-        body {
-            height: 100%;
-            margin: 0;
-        }
-        .content {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            height: 100%;
-        }
-        canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            visibility: hidden;
-        }
-        pre {
-            word-wrap: break-word;
-            white-space: pre-wrap;
-            font-family: Consolas, monospace;
-        }
-    </style>
-    <template id="font-installer">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>数据提交平台</title>
         <style>
-            @font-face {
-                font-family: "Consolas";
-                src: url("./static/Consolas.subset.woff") format("woff");
-                font-style: normal;
-                font-weight: normal;
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+            }
+            .content {
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                flex-direction: column;
+                height: 100%;
+            }
+            canvas {
+                position: absolute;
+                top: 0;
+                left: 0;
+                pointer-events: none;
+                visibility: hidden;
+            }
+            pre {
+                word-wrap: break-word;
+                white-space: pre-wrap;
+                font-family: Consolas, monospace;
             }
         </style>
-    </template>
-</head>
-<body>
-    <div class="content">
-        {{CONTENT}}
-        <button class="" onclick="location.reload()">刷新</button>
-    </div>
-</body>
-<script>
-    var isSupportFontFamily = function (f) {
-        const h = "monospace";
-        const e = "▄█▀";
-        const d = 50;
-        const a = 100,
-            i = 100;
-        const c = document.createElement("canvas");
-        document.body.append(c);
-        const b = c.getContext("2d");
-        c.width = a;
-        c.height = i;
-        b.textAlign = "center";
-        b.fillStyle = "black";
-        b.textBaseline = "middle";
-        var g = function (j) {
-            b.clearRect(0, 0, a, i);
-            b.font = d + "px " + j + ", " + h;
-            b.fillText(e, a / 2, i / 2);
-            return b.getImageData(0, 0, a, i).data;
+        <template id="font-installer">
+            <style>
+                @font-face {
+                    font-family: "Consolas";
+                    src: url("./static/Consolas.subset.woff") format("woff");
+                    font-style: normal;
+                    font-weight: normal;
+                }
+            </style>
+        </template>
+    </head>
+    <body>
+        <div class="content">
+            {{CONTENT}}
+            <button class="" onclick="location.reload()">刷新</button>
+        </div>
+    </body>
+    <script>
+        var isSupportFontFamily = function (f) {
+            const h = "monospace";
+            const e = "▄█▀";
+            const d = 50;
+            const a = 100,
+                i = 100;
+            const c = document.createElement("canvas");
+            document.body.append(c);
+            const b = c.getContext("2d");
+            c.width = a;
+            c.height = i;
+            b.textAlign = "center";
+            b.fillStyle = "black";
+            b.textBaseline = "middle";
+            var g = function (j) {
+                b.clearRect(0, 0, a, i);
+                b.font = d + "px " + j + ", " + h;
+                b.fillText(e, a / 2, i / 2);
+                return b.getImageData(0, 0, a, i).data;
+            };
+            return indexedDB.cmp(g(h), g(f)) !== 0;
         };
-        return indexedDB.cmp(g(h), g(f)) !== 0;
-    }
-    if (!isSupportFontFamily("Consolas")) {
-        document.head.append(document.getElementById("font-installer").content);
-    }
-</script>
+        if (!isSupportFontFamily("Consolas")) {
+            document.head.append(document.getElementById("font-installer").content);
+        }
+    </script>
 </html>
