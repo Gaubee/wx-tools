@@ -3,6 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon" />
         <title>数据提交平台</title>
         <style>
             html,
@@ -43,9 +44,12 @@
                 width: max-content;
                 font-size: 12px;
                 line-height: 13.5px;
-                padding: 1.5em 1.5em 0 1.5em;
+                padding: 1.5em 1.5em 0.5em 1.5em;
                 margin: 0;
                 -webkit-text-stroke: 0.5px black;
+            }
+            .expired {
+                color: #e91e63;
             }
             .qrcode {
                 margin: 1em 0;
@@ -55,9 +59,12 @@
                 overflow: hidden;
                 padding: 0.25em;
             }
-            .qrcode-mask {
-                opacity: 0;
+            .hidden {
                 visibility: hidden;
+            }
+            .qrcode-mask {
+                opacity: 1;
+                background-color: #fff;
             }
             @supports (backdrop-filter: blur(10px)) {
                 .qrcode-mask {
@@ -71,8 +78,9 @@
                     transition-timing-function: ease-in;
                     backdrop-filter: blur(1em);
                     opacity: 1;
+                    background-color: transparent;
                 }
-                .qrcode-mask:hover,
+                /* .qrcode-mask:hover, */
                 .qrcode-mask.hover {
                     opacity: 0;
                 }
@@ -120,7 +128,12 @@
     </head>
     <body>
         <div class="content">
-            {{CONTENT}}
+            {{CONTENT_HEADER}}
+            <div class="qrcode">
+                <pre>{{QRCODE_TEXT}}</pre>
+                <div class="qrcode-mask hidden"></div>
+            </div>
+            {{CONTENT_FOOTER}}
             <button class="refresh-btn" onclick="location.reload()">刷新</button>
         </div>
     </body>
@@ -150,5 +163,32 @@
         if (!isSupportFontFamily("Consolas")) {
             document.head.append(document.getElementById("font-installer").content);
         }
+    </script>
+    <script>
+        const wsUrl = new URL(location.href);
+        wsUrl.protocol = "ws:";
+        wsUrl.pathname = "/lifecycle";
+        wsUrl.searchParams.append("token", "{{TOKEN}}");
+        const ws = new WebSocket(wsUrl);
+        ws.onclose = () => {
+            location.reload();
+        };
+        const $qrcodeMask = document.querySelector(".qrcode-mask");
+        const $expTime = document.querySelector("#exp-time");
+        ws.onmessage = (event) => {
+            console.log("event", event);
+            const { data } = event;
+            if (typeof data === "string") {
+                if (data === "start") {
+                    $qrcodeMask.classList.add("hover");
+                } else if (data.startsWith("success:")) {
+                    alert(`视频号“${data.replace("success:", "")}”数据上传成功`);
+                    $qrcodeMask.classList.remove("hidden");
+                    $qrcodeMask.classList.remove("hover");
+                    $expTime.classList.add("expired");
+                    $expTime.innerHTML = "二维码已经过期，点击“刷新”重新生成";
+                }
+            }
+        };
     </script>
 </html>
