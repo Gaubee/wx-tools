@@ -12,6 +12,7 @@
                 display: flex;
                 justify-content: center;
                 align-items: center;
+                user-select: none;
             }
             .content {
                 display: flex;
@@ -31,23 +32,60 @@
                 pointer-events: none;
                 visibility: hidden;
             }
+            p {
+                margin: 0;
+                line-height: 2em;
+            }
             pre {
                 word-wrap: break-word;
                 white-space: pre-wrap;
                 font-family: Consolas, monospace;
                 width: max-content;
                 font-size: 12px;
-                background: rgb(197 202 233 / 68%);
-                border-radius: 1em;
+                line-height: 13.5px;
                 padding: 1.5em 1.5em 0 1.5em;
+                margin: 0;
+                -webkit-text-stroke: 0.5px black;
+            }
+            .qrcode {
+                margin: 1em 0;
+                position: relative;
+                background: #e8eaf6;
+                border-radius: 1em;
+                overflow: hidden;
+                padding: 0.25em;
+            }
+            .qrcode-mask {
+                opacity: 0;
+                visibility: hidden;
+            }
+            @supports (backdrop-filter: blur(10px)) {
+                .qrcode-mask {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    z-index: 2;
+                    transition-duration: 300ms;
+                    transition-timing-function: ease-in;
+                    backdrop-filter: blur(1em);
+                    opacity: 1;
+                }
+                .qrcode-mask:hover,
+                .qrcode-mask.hover {
+                    opacity: 0;
+                }
             }
             .refresh-btn {
                 padding: 0.5em 1.8em;
-                border-radius: 0.5em;
-                border-color: #3f51b5;
-                background-color: #e8eaf6;
+                border-radius: 0.8em;
+                border-color: #e8eaf6;
                 font-size: 14px;
                 margin-top: 1em;
+                background: linear-gradient(145deg, #f8faff, #d1d3dd);
+                box-shadow: 20px 20px 60px #c5c7d1, -20px -20px 60px #ffffff;
+                border-width: 0;
             }
             body {
                 background-color: #fff;

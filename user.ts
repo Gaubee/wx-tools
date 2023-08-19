@@ -6,6 +6,7 @@ import qrcode from "npm:qrcode";
 import { isMobile } from "npm:is-mobile";
 import { WebSocketServer } from "npm:ws";
 import { EventEmitter } from "node:events";
+import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { setTimeout } from "node:timers/promises";
 import { logAllUrl } from "./helper/all-ip.ts";
@@ -25,7 +26,17 @@ const html = String.raw;
  */
 export class WeChatChannelsToolsUser {
     #http!: Server;
-    static #scanHtmlTemplate = fs.readFileSync(path.join(__dirname, "user/scan.html"), "utf-8");
+    private static _scanHtmlTemplateCache?: string;
+    static get #scanHtmlTemplate() {
+        if (this._scanHtmlTemplateCache) {
+            return this._scanHtmlTemplateCache;
+        }
+        const htmlTemplate = fs.readFileSync(path.join(__dirname, "user/scan.html"), "utf-8");
+        if (!process.argv.includes("--dev")) {
+            this._scanHtmlTemplateCache = htmlTemplate;
+        }
+        return htmlTemplate;
+    }
     static #wss = new WebSocketServer({
         noServer: true,
     });
@@ -57,15 +68,21 @@ export class WeChatChannelsToolsUser {
             ua: req,
         });
         const is_wechat = !!req.headers["user-agent"]?.match(/Wechat/i);
-        let content = `${is_mobile ? html`<h3 style="color:#e91e63;">建议使用桌面电脑打开</h3>` : ""}`;
+        let content = "";
         content += is_wechat
             ? html`<h3 style="color:#e91e63;">『请使用手机微信摄像头扫码！！』</h3>`
             : html`<h4 style="color:#673AB7;">请使用手机微信摄像头扫码</h4>`;
         const wcRobber = new WeChatChannelsRobber();
         console.log("___wechat_channels_robber_attack");
 
-        content += html`<p style="color: #673AB7; font-size: 10px;">该二维码为一次性二维码，使用完就会失效</p>`;
-        content += `<pre>`;
+        content += html`<p style="color: #673AB7; font-size: 10px;">该二维码为一次性二维码，使用完就会失效</p>
+            <div style="color: #673AB7; font-size: 10px; display: flex; align-items: flex-end;">
+                <span> 过期时间： </span>
+                <span id="exp-time" data-datetime="${Date.now()}">
+                    ${Intl.DateTimeFormat("zh-CN", { dateStyle: "medium", timeStyle: "medium" }).format(Date.now())}
+                </span>
+            </div>`;
+        content += `<div class="qrcode"><pre>`;
         await wcRobber
             .attack(
                 (val) => {
@@ -73,7 +90,8 @@ export class WeChatChannelsToolsUser {
                 },
                 (token) => {
                     console.log("___wechat_channels_robber_attack_end");
-                    content += `</pre>`;
+                    content += `</pre><div class="qrcode-mask"></div></div>`;
+                    content += `${is_mobile ? html`<b style="color:#e91e63;">建议使用桌面电脑打开</b>` : ""}`;
                     let resHtml = WeChatChannelsToolsUser.#scanHtmlTemplate.replace("{{CONTENT}}", content);
                     if (token) {
                         resHtml += `<script>window.addEventListener("load",()=>{new WebSocket(\`ws://\${location.host}/lifecycle?token=${token}\`)});</script>`;
