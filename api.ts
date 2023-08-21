@@ -61,7 +61,7 @@ export class WeChatChannelsToolsServer {
     }
 
     #onHttpUpgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
-        const reqUrl = new URL((req.url ?? "").replace("/api/", "/"), "http://localhost");
+        const reqUrl = new URL((req.url ?? "").replace("/api/", "/").replace("/api-ws/", "/"), "http://localhost");
         console.log("___watch_socket", req.url);
         if (reqUrl.pathname === "/watch") {
             this.#dataWatcher.handleUpgrade(req, socket, head);
