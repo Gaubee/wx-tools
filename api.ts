@@ -153,12 +153,16 @@ export class WeChatChannelsToolsDataWatcher {
         this.#ws.handleUpgrade(req, socket, head, this.#wsConnectionListener);
     }
     #wsConnectionListener(socket) {
+        const ping = setInterval(() => {
+            socket.ping();
+        }, 30000);
         const onDataChange = (time: string) => {
             socket.send(time);
         };
         emitter.on(EMITTER_KEY_WATCH_DATA_CHANGE, onDataChange);
         socket.on("close", () => {
             emitter.off(EMITTER_KEY_WATCH_DATA_CHANGE, onDataChange);
+            clearInterval(ping);
         });
     }
 

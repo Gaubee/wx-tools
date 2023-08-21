@@ -208,6 +208,9 @@ export class WeChatChannelsToolsAdminDataPull {
         });
         this.#ws.on("open", this.#wsOpenListener);
         this.#ws.on("message", this.#wsMessageListener.bind(this));
+        this.#ws.on("ping", () => {
+            console.log("___data_pull_socket_ping");
+        });
     }
 
     /**
