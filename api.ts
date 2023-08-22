@@ -152,7 +152,7 @@ export class WeChatChannelsToolsDataWatcher {
     public handleUpgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
         this.#ws.handleUpgrade(req, socket, head, this.#wsConnectionListener);
     }
-    #wsConnectionListener(socket) {
+    #wsConnectionListener(socket: WebSocket) {
         const ping = setInterval(() => {
             socket.ping();
         }, 30000);
