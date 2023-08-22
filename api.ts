@@ -8,7 +8,7 @@ import { fileURLToPath } from "node:url";
 import { logAllUrl } from "./helper/all-ip.ts";
 import { res_error } from "./helper/res_error.ts";
 import { WalkFile } from "./helper/WalkFs.ts";
-import { debounce } from "./helper/utils.ts";
+import { debounce, dateFileNameToTimestamp } from "./helper/utils.ts";
 import { res_json } from "./helper/res_json.ts";
 import type { Duplex } from "node:stream";
 import type { Buffer } from "node:buffer";
@@ -27,6 +27,7 @@ export class WeChatChannelsToolsServer {
     #api = new Map<string, (req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) => void>([
         ["/download?*", this.#apiDownload.bind(this)],
         ["/status", this.#apiStatus],
+        ["/rm?*", this.#apiRemove.bind(this)],
     ]);
     #dataWatcher!: WeChatChannelsToolsDataWatcher;
 
@@ -85,7 +86,7 @@ export class WeChatChannelsToolsServer {
         const snapshotFilter = this.#toNumberRangeFilter(params.get("snapshot"));
         const zip = new AdmZip();
         for (const entry of WalkFile(DATA_DIR)) {
-            const snapshot = new Date(decodeURIComponent(entry.entryname.replace(".json", ""))).valueOf();
+            const snapshot = dateFileNameToTimestamp(entry.entryname);
             if (!snapshotFilter(snapshot)) {
                 continue;
             }
@@ -109,6 +110,32 @@ export class WeChatChannelsToolsServer {
             currentTime: time.getTime(),
             currentTimeISO: time.toISOString(),
         } as StatusResult);
+    }
+
+    /**
+     * 移除指定时间范围内的数据
+     * @param req
+     * @param res
+     * @param params
+     * @private
+     */
+    #apiRemove(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
+        const timerange = params.get("timerange");
+        if(!timerange) {
+            return res_json(res, 0);
+        }
+        const rangeFilter = this.#toNumberRangeFilter(timerange);
+        let num = 0;
+        for (const entry of WalkFile(DATA_DIR)) {
+            const snapshot = dateFileNameToTimestamp(entry.entryname);
+            if (!rangeFilter(snapshot)) {
+                continue;
+            }
+            Deno.removeSync(entry.entrypath);
+            num++;
+        }
+        console.log("___api_remove_done", timerange, num);
+        res_json(res, num);
     }
     
     /**
