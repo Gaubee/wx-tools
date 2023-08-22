@@ -218,7 +218,7 @@ export class WeChatChannelsToolsAdminDataPull {
      * @private
      */
     async #getDownloadLastTime() {
-        const downloadList = [...WalkDir(DOWNLOAD_DIR)].map(entry => +entry.entryname);
+        const downloadList = [...WalkFile(DOWNLOAD_DIR)].map(entry => new Date(decodeURIComponent(entry.entryname.replace(".zip", ""))).valueOf());
         if(downloadList.length) {
             return downloadList.sort((a, b) => b - a)[0];
         }
