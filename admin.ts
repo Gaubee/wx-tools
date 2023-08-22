@@ -2,25 +2,33 @@ import http from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import minimist from "npm:minimist";
-import WebSocket from "npm:ws";
+import WebSocket, { WebSocketServer } from "npm:ws";
 import compressing from "npm:compressing";
+import { EventEmitter } from "node:events";
 import { fileURLToPath } from "node:url";
 import { logAllUrl } from "./helper/all-ip.ts";
 import { res_error } from "./helper/res_error.ts";
 import { res_json } from "./helper/res_json.ts";
 import { WalkDir, WalkFile } from "./helper/WalkFs.ts";
 import { Buffer } from "node:buffer";
+import { debounce } from "./helper/utils.ts";
+import type { Duplex } from "node:stream";
 import type { UserInfo, PostItem, QueryResult, StatusResult } from "./type.d.ts";
 
 const HTTP_PORT = 3002;
+const EMITTER_KEY_DATA_FILE_CHANGE = Symbol("data_file_change");
 
 const __dirname = fileURLToPath(new URL("./", import.meta.url));
+const emitter = new EventEmitter();
 
 const DATA_DIR = path.join(__dirname, "data");
 const DOWNLOAD_DIR = path.join(__dirname, "download");
 
 export class WeChatChannelsToolsAdmin {
     #http!: http;
+    #wsQuery = new WebSocketServer({
+        noServer: true,
+    });
     #api = new Map<string, (req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) => void>([
         ["/authors", this.#apiGetAuthors],
         ["/query?*", this.#apiQuery.bind(this)],
@@ -30,8 +38,10 @@ export class WeChatChannelsToolsAdmin {
         fs.mkdirSync(DATA_DIR, {
             recursive: true,
         });
+        this.#dataFileWatcher();
         this.#http = http
             .createServer(this.#httpRequestListener.bind(this))
+            .on("upgrade", this.#onHttpUpgrade.bind(this))
             .listen(HTTP_PORT, "0.0.0.0", this.#httpListeningListener.bind(this));
     }
 
@@ -54,6 +64,14 @@ export class WeChatChannelsToolsAdmin {
         res.end();
     }
 
+    #onHttpUpgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
+        const reqUrl = new URL((req.url ?? "").replace("/api/", "/"), "http://localhost");
+        console.log("___on_socket", req.url);
+        if (reqUrl.pathname === "/query/observe") {
+            this.#wsQuery.handleUpgrade(req, socket, head, this.#wsQueryConnectionListener.bind(this));
+        }
+    }
+
     #httpListeningListener() {
         for (const route of this.#api.keys()) {
             logAllUrl(`http://localhost:${HTTP_PORT}${route}`);
@@ -74,6 +92,44 @@ export class WeChatChannelsToolsAdmin {
         res_json(res, json);
     }
 
+    /**
+     * 数据查询API
+     * @param req
+     * @param res
+     * @param params
+     * @private
+     */
+    #apiQuery(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
+        console.log("___api_query_start");
+        const json = this.#query(params);
+        console.log("___api_query_finish", json.length);
+        res_json(res, json);
+    }
+
+    /**
+     * 数据查询WebSocket
+     * @param socket
+     * @private
+     */
+    #wsQueryConnectionListener(socket: WebSocket) {
+        let search = new URLSearchParams();
+        socket.on("message", (data: Buffer) => {
+            const querystring = data.toString();
+            console.log("___socket_query_params_change", querystring);
+            search = new URLSearchParams(querystring);
+        });
+        const onDataFileChange = () => {
+            const json = this.#query(search);
+            console.log("___socket_query_send", search.toString(), json.length);
+            socket.send(JSON.stringify(json));
+        }
+        emitter.on(EMITTER_KEY_DATA_FILE_CHANGE, onDataFileChange);
+        socket.on("close", () => {
+            console.log("___socket_query_close");
+            emitter.off(EMITTER_KEY_DATA_FILE_CHANGE, onDataFileChange);
+        });
+    }
+
     #queryParamsNumber = new Map<string, (item: PostItem) => number>([
         ["createTime", (item) => item.createTime * 1000],
         ["likeCount", (item) => item.likeCount],
@@ -87,12 +143,10 @@ export class WeChatChannelsToolsAdmin {
     ]);
     /**
      * 查询数据
-     * @param req
-     * @param res
      * @param params
      * @private
      */
-    #apiQuery(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
+    #query(params: URLSearchParams) {
         /** 快照过滤器 */
         const snapshotFilter = this.#toNumberRangeFilter(params.get("snapshot"));
         /** 作者过滤器 */
@@ -112,7 +166,6 @@ export class WeChatChannelsToolsAdmin {
             return [...numberFilters, ...stringFilters].every((filter) => filter(item));
         };
         const result: Record<string, QueryResult[number]> = {};
-        console.log("___api_query_start");
         for (const entry of WalkFile(DATA_DIR)) {
             const author = path.parse(entry.entrydir).base;
             if (!authorFilter(author)) {
@@ -142,9 +195,7 @@ export class WeChatChannelsToolsAdmin {
                 }
             }
         }
-        const json = [...Object.values(result)];
-        console.log("___api_query_finish", json.length);
-        res_json(res, json);
+        return [...Object.values(result)];
     }
 
     /**
@@ -177,6 +228,24 @@ export class WeChatChannelsToolsAdmin {
             return (name: string) => name === search || reg.test(name);
         }) ?? [() => true];
         return (text: string) => matches.some((match) => match(text));
+    }
+
+    /**
+     * 数据文件变动监听
+     * @private
+     */
+    async #dataFileWatcher() {
+        console.log("___data_watcher_on");
+        const watcher = Deno.watchFs(DATA_DIR);
+        const emit = debounce(() => {
+            emitter.emit(EMITTER_KEY_DATA_FILE_CHANGE);
+        }, 200);
+        for await (const event of watcher) {
+            // 目前只需要监听文件新增就可以了
+            if (event.kind === "create") {
+                emit();
+            }
+        }
     }
 }
 
@@ -253,11 +322,13 @@ export class WeChatChannelsToolsAdminDataPull {
         const downloadUrl = new URL("/api/download", this.#options.api);
         const timeRange = `${this.#downloadLastTime}-${timestamp}`;
         downloadUrl.searchParams.append("snapshot", timeRange);
-        console.log("___data_pull_socket_download", this.#downloadLastTime, timestamp);
+        const startTime = Date.now();
+        console.log("___data_pull_socket_download_start", this.#downloadLastTime, timestamp);
         const res = await fetch(downloadUrl.href);
         const zipPath = path.join(DOWNLOAD_DIR, `${encodeURIComponent(isoTime)}.zip`);
         await fs.promises.writeFile(zipPath, Buffer.from(await res.arrayBuffer()), "binary");
         await compressing.zip.uncompress(zipPath, DATA_DIR);
+        console.log("___data_pull_socket_download_completed", this.#downloadLastTime, timestamp, `${Date.now()-startTime}ms`, this.#downloadQueues.length);
         this.#downloadLastTime = timestamp;
         if(this.#downloadQueues.length) {
             this.#dataDownload();
