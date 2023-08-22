@@ -31,3 +31,12 @@ export function throttle(handler: Function, time: number) {
         }, time);
     };
 }
+
+/**
+ * 日期文件名转时间戳
+ * @param fileName 文件名
+ * @param suffix 后缀名
+ */
+export function dateFileNameToTimestamp(fileName: string, suffix = "json") {
+    return new Date(decodeURIComponent(fileName.replace(`.${suffix}`, ""))).valueOf();
+}

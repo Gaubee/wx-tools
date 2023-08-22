@@ -11,7 +11,7 @@ import { res_error } from "./helper/res_error.ts";
 import { res_json } from "./helper/res_json.ts";
 import { WalkDir, WalkFile } from "./helper/WalkFs.ts";
 import { Buffer } from "node:buffer";
-import { debounce } from "./helper/utils.ts";
+import { debounce, dateFileNameToTimestamp } from "./helper/utils.ts";
 import type { Duplex } from "node:stream";
 import type { UserInfo, PostItem, QueryResult, StatusResult } from "./type.d.ts";
 
@@ -149,6 +149,8 @@ export class WeChatChannelsToolsAdmin {
     #query(params: URLSearchParams) {
         /** 快照过滤器 */
         const snapshotFilter = this.#toNumberRangeFilter(params.get("snapshot"));
+        /** 快照数量 */
+        const snapshotLimit = Number(params.get("snapshot_limit") ?? "Infinity");
         /** 作者过滤器 */
         const authorFilter = this.#toStringKeyFilter(params.get("authors"));
         /** 整数参数过滤器 */
@@ -165,33 +167,38 @@ export class WeChatChannelsToolsAdmin {
         const itemFilter = (item: PostItem) => {
             return [...numberFilters, ...stringFilters].every((filter) => filter(item));
         };
+        
         const result: Record<string, QueryResult[number]> = {};
-        for (const entry of WalkFile(DATA_DIR)) {
-            const author = path.parse(entry.entrydir).base;
+        for (const dir of WalkDir(DATA_DIR)) {
+            const author = dir.entryname;
             if (!authorFilter(author)) {
                 continue;
             }
+            const entryList = [...WalkFile(path.join(DATA_DIR, author))].sort((a, b) => {
+                return dateFileNameToTimestamp(b.entryname) - dateFileNameToTimestamp(a.entryname);
+            }).slice(0, snapshotLimit);
+            for (const entry of entryList) {
+                const snapshot = dateFileNameToTimestamp(entry.entryname);
+                if (!snapshotFilter(snapshot)) {
+                    continue;
+                }
 
-            const snapshot = new Date(decodeURIComponent(entry.entryname.replace(".json", ""))).valueOf();
-            if (!snapshotFilter(snapshot)) {
-                continue;
-            }
+                const { user_info, post_list } = entry.readJson() as {
+                    user_info: UserInfo & { data: UserInfo };
+                    post_list: PostItem[];
+                };
 
-            const { user_info, post_list } = entry.readJson() as {
-                user_info: UserInfo & { data: UserInfo };
-                post_list: PostItem[];
-            };
-
-            result[author] ??= {
-                user: user_info.data ? user_info.data : user_info,
-                list: [],
-            };
-            for (let postItem of post_list.filter((post) => itemFilter(post))) {
-                const index = result[author].list.findIndex((post) => post.objectId === postItem.objectId);
-                if (~index) {
-                    result[author].list[index] = postItem;
-                } else {
-                    result[author].list.push(postItem);
+                result[author] ??= {
+                    user: user_info.data ? user_info.data : user_info,
+                    list: [],
+                };
+                for (let postItem of post_list.filter((post) => itemFilter(post))) {
+                    const index = result[author].list.findIndex((post) => post.objectId === postItem.objectId);
+                    if (~index) {
+                        result[author].list[index] = postItem;
+                    } else {
+                        result[author].list.push(postItem);
+                    }
                 }
             }
         }
@@ -287,7 +294,7 @@ export class WeChatChannelsToolsAdminDataPull {
      * @private
      */
     async #getDownloadLastTime() {
-        const downloadList = [...WalkFile(DOWNLOAD_DIR)].map(entry => new Date(decodeURIComponent(entry.entryname.replace(".zip", ""))).valueOf());
+        const downloadList = [...WalkFile(DOWNLOAD_DIR)].map(entry => dateFileNameToTimestamp(entry.entryname, "zip"));
         if(downloadList.length) {
             return downloadList.sort((a, b) => b - a)[0];
         }
