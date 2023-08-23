@@ -4,7 +4,6 @@ import qrcode from "npm:qrcode";
 import { setTimeout } from "node:timers/promises";
 import type { UserInfo, PostItem, WeChatChannelsApiResponse } from "./type.d.ts";
 import { __dirname } from "./user.ts";
-import { WebSocket } from "https://esm.sh/ws@8.13.0";
 
 /**
  * 微信视频号数据爬虫
@@ -43,8 +42,6 @@ export class WeChatChannelsRobber {
 
     /**
      * 打印生成二维码
-     * @param append 打印二维码
-     * @param end 结束打印，提供token
      */
     async generateQrcode() {
         // 获取登录授权token
@@ -61,8 +58,6 @@ export class WeChatChannelsRobber {
     }
     /**
      * 开始流程
-     * @param append 添加数据
-     * @param end 返回数据
      */
     async attack() {
         this.signal.addEventListener("abort", this.#userLoginStatusLoopOnStop);
@@ -168,12 +163,12 @@ export class WeChatChannelsRobber {
 
     /**
      * 获取用户视频列表
+     * @param pageSize 每页条数
      * @param max 最多获取视频条数
      * @private
      */
-    async #getUserPostList(max = 100) {
+    async #getUserPostList(pageSize = 20, max = 100) {
         const postList = new Map<string, PostItem>();
-        const PAGE_SIZE = 20;
         let page = 1;
         while (true) {
             const res = await fetch("https://channels.weixin.qq.com/cgi-bin/mmfinderassistant-bin/post/post_list", {
@@ -182,7 +177,7 @@ export class WeChatChannelsRobber {
                     "content-type": "application/json",
                     cookie: this.#cookies,
                 },
-                body: `{"pageSize":${PAGE_SIZE},"currentPage":${page}}`,
+                body: `{"pageSize":${pageSize},"currentPage":${page}}`,
             });
             console.log("___wechat_channels_robber_attack_user_post_list_pull", page, this.#token);
             page++;
@@ -190,7 +185,7 @@ export class WeChatChannelsRobber {
             for (const post of json.data.list) {
                 postList.set(post.objectId, post);
             }
-            if (json.data.list.length < PAGE_SIZE || postList.size > 100) {
+            if (json.data.list.length < pageSize || postList.size > max) {
                 break;
             }
         }
