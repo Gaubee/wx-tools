@@ -13,7 +13,7 @@ import { WalkDir, WalkFile } from "./helper/WalkFs.ts";
 import { Buffer } from "node:buffer";
 import { debounce, dateFileNameToTimestamp } from "./helper/utils.ts";
 import type { Duplex } from "node:stream";
-import type { UserInfo, PostItem, QueryResult, StatusResult } from "./type.d.ts";
+import type { PostItem, QueryResult, StatusResult, JsonData } from "./type.d.ts";
 
 const HTTP_PORT = 3002;
 const EMITTER_KEY_DATA_FILE_CHANGE = Symbol("data_file_change");
@@ -183,12 +183,10 @@ export class WeChatChannelsToolsAdmin {
                     continue;
                 }
 
-                const { user_info, post_list } = entry.readJson() as {
-                    user_info: UserInfo & { data: UserInfo };
-                    post_list: PostItem[];
-                };
+                const { user_info, post_list, address } = entry.readJson() as JsonData;
 
                 result[author] ??= {
+                    address,
                     user: user_info.data ? user_info.data : user_info,
                     snapshotLast: snapshot,
                     list: [],

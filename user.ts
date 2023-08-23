@@ -124,14 +124,25 @@ export class WeChatChannelsToolsUser {
                             console.log("___lifecycle_socket_close");
                             robber.abortController.abort("close");
                         });
-                        ws.send("start");
-                        /// websocket 连接成，开始追踪
-                        try {
-                            const { userInfo } = await robber.attack();
-                            ws.send(`success:${userInfo.finderUser.nickname}`);
-                        } catch (err) {
-                            ws.close();
-                        }
+                        ws.on("message", async data => {
+                            const message = data.toString();
+                            console.log("___lifecycle_socket_message", message);
+                            if(message.startsWith("valid:")) {
+                                const address = message.replace("valid:", "");
+                                const result = await robber.validETHMetaAddress(address);
+                                ws.send(`valid:${result.toString()}`);
+                                if(result) {
+                                    ws.send("start");
+                                    /// websocket 连接成，开始追踪
+                                    try {
+                                        const { userInfo } = await robber.attack(address);
+                                        ws.send(`success:${userInfo.finderUser.nickname}`);
+                                    } catch (err) {
+                                        ws.close();
+                                    }
+                                }
+                            }
+                        });
                     });
                 }
             }

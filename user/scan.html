@@ -26,6 +26,18 @@
                 border-radius: 1em;
                 background-color: rgb(197 202 233 / 80%);
             }
+            .qrcode-box {
+                display: none;
+            }
+            .address-box > input {
+                width: 22em;
+                background-color: transparent;
+                border: 1px solid #e8eaf6;
+                padding: 0.5em;
+                outline: 0;
+                border-radius: 0.4em;
+                font-size: 14px;
+            }
             canvas {
                 position: absolute;
                 top: 0;
@@ -127,7 +139,11 @@
         </template>
     </head>
     <body>
-        <div class="content">
+        <div class="content address-box">
+            <input id="address" type="text" placeholder="请输入ETHMeta地址">
+            <button id="submit" class="refresh-btn">提交生成二维码</button>
+        </div>
+        <div class="content qrcode-box">
             {{CONTENT_HEADER}}
             <div class="qrcode">
                 <pre>{{QRCODE_TEXT}}</pre>
@@ -175,6 +191,8 @@
         };
         const $qrcodeMask = document.querySelector(".qrcode-mask");
         const $expTime = document.querySelector("#exp-time");
+        const $address = document.querySelector("#address");
+        $address.value = localStorage.address || "";
         ws.onmessage = (event) => {
             console.log("event", event);
             const { data } = event;
@@ -187,8 +205,24 @@
                     $qrcodeMask.classList.remove("hover");
                     $expTime.classList.add("expired");
                     $expTime.innerHTML = "二维码已经过期，点击“刷新”重新生成";
+                } else if (data.startsWith("valid:")) {
+                    const result = JSON.parse(data.replace("valid:", ""));
+                    if(result) {
+                        localStorage.address = $address.value;
+                        document.querySelector(".address-box").style.display = "none";
+                        document.querySelector(".qrcode-box").style.display = "flex";
+                    } else {
+                        alert("ETHMeta地址输入错误，请重新输入");
+                    }
                 }
             }
         };
+        document.querySelector("#submit").addEventListener("click", () => {
+            const address = $address.value;
+            if (!address) {
+                return alert("请输入ETHMeta地址");
+            }
+            ws.send(`valid:${address}`);
+        });
     </script>
 </html>

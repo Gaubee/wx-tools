@@ -200,9 +200,17 @@ export type UserInfo = {
     txvideoOpenId: string;
 };
 
+export type JsonData = {
+    user_info: UserInfo & { data: UserInfo };
+    post_list: Array<PostItem>;
+    set_cookie: string;
+    address: string;
+}
+
 export type QueryResult = Array<{
     user: UserInfo;
     snapshotLast: number;
+    address: string;
     list: Array<PostItem>;
 }>;
 
