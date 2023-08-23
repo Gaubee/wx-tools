@@ -202,6 +202,7 @@ export type UserInfo = {
 
 export type QueryResult = Array<{
     user: UserInfo;
+    snapshotLast: number;
     list: Array<PostItem>;
 }>;
 

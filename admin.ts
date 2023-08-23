@@ -190,6 +190,7 @@ export class WeChatChannelsToolsAdmin {
 
                 result[author] ??= {
                     user: user_info.data ? user_info.data : user_info,
+                    snapshotLast: snapshot,
                     list: [],
                 };
                 for (let postItem of post_list.filter((post) => itemFilter(post))) {
