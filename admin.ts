@@ -285,7 +285,7 @@ export class WeChatChannelsToolsAdminDataPull {
         this.#ws.on("open", this.#wsOpenListener);
         this.#ws.on("message", this.#wsMessageListener.bind(this));
         this.#ws.on("ping", () => {
-            console.log("___data_pull_socket_ping");
+            console.log("___data_pull_socket_ping", new Date().toLocaleString());
         });
     }
 
@@ -333,9 +333,10 @@ export class WeChatChannelsToolsAdminDataPull {
         console.log("___data_pull_socket_download_start", this.#downloadLastTime, timestamp);
         const res = await fetch(downloadUrl.href);
         const zipPath = path.join(DOWNLOAD_DIR, `${encodeURIComponent(isoTime)}.zip`);
-        await fs.promises.writeFile(zipPath, Buffer.from(await res.arrayBuffer()), "binary");
+        const buffer = Buffer.from(await res.arrayBuffer());
+        await fs.promises.writeFile(zipPath, buffer, "binary");
         await compressing.zip.uncompress(zipPath, DATA_DIR);
-        console.log("___data_pull_socket_download_completed", this.#downloadLastTime, timestamp, `${Date.now()-startTime}ms`, this.#downloadQueues.length);
+        console.log("___data_pull_socket_download_completed", this.#downloadLastTime, timestamp, `${Math.ceil(buffer.byteLength/1024)}KB`,`${Date.now()-startTime}ms`, this.#downloadQueues.length);
         this.#downloadLastTime = timestamp;
         if(this.#downloadQueues.length) {
             this.#dataDownload();
