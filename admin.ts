@@ -30,7 +30,8 @@ export class WeChatChannelsToolsAdmin {
         noServer: true,
     });
     #api = new Map<string, (req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) => void>([
-        ["/authors", this.#apiGetAuthors],
+        ["/authors", this.#apiAuthors],
+        ["/authors/snapshot/record?*", this.#apiAuthorsSnapshotRecord],
         ["/query?*", this.#apiQuery.bind(this)],
     ]);
 
@@ -85,10 +86,28 @@ export class WeChatChannelsToolsAdmin {
      * @param params
      * @private
      */
-    #apiGetAuthors(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
-        console.log("___api_get_authors_start");
+    #apiAuthors(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
+        console.log("___api/authors", "start");
         const json = [...WalkDir(DATA_DIR)].map((entry) => entry.entryname);
-        console.log("___api_get_authors_finish", json.length);
+        console.log("___api/authors", "finish", json.length);
+        res_json(res, json);
+    }
+
+    /**
+     * 获取用户全部快照记录
+     * @param req
+     * @param res
+     * @param params
+     * @private
+     */
+    #apiAuthorsSnapshotRecord(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
+        console.log("___api/authors/snapshot/record", "start");
+        const author = params.get("author");
+        if(!author) {
+            return res_json(res, []);
+        }
+        const json = [...WalkFile(path.join(DATA_DIR, author))].map(entry => dateFileNameToTimestamp(entry.entryname));
+        console.log("___api/authors/snapshot/record", "finish", json.length);
         res_json(res, json);
     }
 
@@ -100,9 +119,9 @@ export class WeChatChannelsToolsAdmin {
      * @private
      */
     #apiQuery(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
-        console.log("___api_query_start");
+        console.log("___api/query", "start");
         const json = this.#query(params);
-        console.log("___api_query_finish", json.length);
+        console.log("___api/query", "finish", json.length);
         res_json(res, json);
     }
 
