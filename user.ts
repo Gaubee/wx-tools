@@ -1,5 +1,5 @@
 import http from "node:http";
-import type { RequestListener, IncomingMessage, ServerResponse, Server } from "node:http";
+import type { RequestListener, IncomingMessage, Server } from "node:http";
 import fs from "node:fs";
 import path from "node:path";
 import { isMobile } from "npm:is-mobile";
@@ -110,7 +110,7 @@ export class WeChatChannelsToolsUser {
         logAllUrl(`http://localhost:${HTTP_PORT}/index.html`);
     }
 
-    #onHttpUpgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
+    #onHttpUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer) {
         const reqUrl = new URL(req.url ?? "", "http://localhost");
         console.log("___lifecycle_socket", req.url);
         if (reqUrl.pathname === "/lifecycle") {

@@ -13,7 +13,7 @@ export class CryptoHelper implements BFMetaSignUtil.CryptoHelperInterface {
             .digest();
     }
 
-    async md5(data?: BinaryLike) {
+    async md5(data?: BinaryLike): Promise<any> {
         const hash = crypto.createHash("md5");
         if (data) {
             return hash.update(data).digest();
@@ -21,7 +21,7 @@ export class CryptoHelper implements BFMetaSignUtil.CryptoHelperInterface {
         return hash;
     }
 
-    async ripemd160(data?: BinaryLike) {
+    async ripemd160(data?: BinaryLike): Promise<any> {
         const hash = crypto.createHash("ripemd160");
         if (data) {
             return hash.update(data).digest();

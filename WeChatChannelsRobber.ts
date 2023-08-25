@@ -49,7 +49,7 @@ export class WeChatChannelsRobber {
      * @param address 地址字符串
      */
     validETHMetaAddress(address: string) {
-        const bfmetaSignUtil = new BFMetaSignUtil("b", Buffer, new CryptoHelper());
+        const bfmetaSignUtil = new BFMetaSignUtil("b", Buffer as any, new CryptoHelper() as any);
         return bfmetaSignUtil.isAddress(address);
     }
 

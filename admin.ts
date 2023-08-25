@@ -12,6 +12,7 @@ import { res_json } from "./helper/res_json.ts";
 import { WalkDir, WalkFile } from "./helper/WalkFs.ts";
 import { Buffer } from "node:buffer";
 import { debounce, dateFileNameToTimestamp } from "./helper/utils.ts";
+import type { Server, IncomingMessage, ServerResponse } from "node:http";
 import type { Duplex } from "node:stream";
 import type { PostItem, QueryResult, StatusResult, JsonData } from "./type.d.ts";
 
@@ -25,11 +26,11 @@ const DATA_DIR = path.join(__dirname, "data");
 const DOWNLOAD_DIR = path.join(__dirname, "download");
 
 export class WeChatChannelsToolsAdmin {
-    #http!: http;
+    #http!: Server;
     #wsQuery = new WebSocketServer({
         noServer: true,
     });
-    #api = new Map<string, (req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) => void>([
+    #api = new Map<string, (req: IncomingMessage, res: ServerResponse, params: URLSearchParams) => void>([
         ["/authors", this.#apiAuthors],
         ["/authors/snapshot/record?*", this.#apiAuthorsSnapshotRecord],
         ["/query?*", this.#apiQuery.bind(this)],
@@ -47,7 +48,7 @@ export class WeChatChannelsToolsAdmin {
             .listen(HTTP_PORT, "0.0.0.0", this.#httpListeningListener.bind(this));
     }
 
-    async #httpRequestListener(req: http.IncomingMessage, res: http.OutgoingMessage) {
+    async #httpRequestListener(req: IncomingMessage, res: ServerResponse) {
         console.log("___request_listener", req.url);
         const origin = `https://${req.headers.host || "localhost"}`;
         const reqUrl = new URL((req.url ?? "").replace("/api-admin/", "/"), origin);
@@ -66,7 +67,7 @@ export class WeChatChannelsToolsAdmin {
         res.end();
     }
 
-    #onHttpUpgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
+    #onHttpUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer) {
         const reqUrl = new URL((req.url ?? "").replace("/api/", "/"), "http://localhost");
         console.log("___on_socket", req.url);
         if (reqUrl.pathname === "/query/observe") {
@@ -87,7 +88,7 @@ export class WeChatChannelsToolsAdmin {
      * @param params
      * @private
      */
-    #apiAuthors(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
+    #apiAuthors(req: IncomingMessage, res: ServerResponse, params: URLSearchParams) {
         console.log("___api/authors", "start");
         const json = [...WalkDir(DATA_DIR)].map((entry) => entry.entryname);
         console.log("___api/authors", "finish", json.length);
@@ -101,7 +102,7 @@ export class WeChatChannelsToolsAdmin {
      * @param params
      * @private
      */
-    #apiAuthorsSnapshotRecord(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
+    #apiAuthorsSnapshotRecord(req: IncomingMessage, res: ServerResponse, params: URLSearchParams) {
         console.log("___api/authors/snapshot/record", "start");
         const author = params.get("author");
         if(!author) {
@@ -119,7 +120,7 @@ export class WeChatChannelsToolsAdmin {
      * @param params
      * @private
      */
-    #apiQuery(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
+    #apiQuery(req: IncomingMessage, res: ServerResponse, params: URLSearchParams) {
         console.log("___api/query", "start");
         const json = this.#query(params);
         console.log("___api/query", "finish", json.length);
@@ -231,7 +232,7 @@ export class WeChatChannelsToolsAdmin {
      * @param params
      * @private
      */
-    #apiDownloadRemove(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
+    #apiDownloadRemove(req: IncomingMessage, res: ServerResponse, params: URLSearchParams) {
         const timerange = params.get("timerange");
         if(!timerange) {
             return res_json(res, 0);
@@ -313,7 +314,7 @@ export class WeChatChannelsToolsAdminDataPull {
     #options!: DataPullOptions;
     
     constructor(
-        options: DataPullOptions = {}
+        options: DataPullOptions
     ) {
         fs.mkdirSync(DOWNLOAD_DIR, {
             recursive: true,
@@ -370,7 +371,7 @@ export class WeChatChannelsToolsAdminDataPull {
      */
     async #dataDownload() {
         try {
-            const isoTime = this.#downloadQueues.shift();
+            const isoTime = this.#downloadQueues.shift()!;
             const timestamp = new Date(isoTime).valueOf();
             const downloadUrl = new URL("/api/download", this.#options.api);
             const timeRange = `${this.#downloadLastTime}-${timestamp}`;

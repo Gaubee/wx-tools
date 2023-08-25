@@ -10,6 +10,8 @@ import { res_error } from "./helper/res_error.ts";
 import { WalkFile } from "./helper/WalkFs.ts";
 import { debounce, dateFileNameToTimestamp } from "./helper/utils.ts";
 import { res_json } from "./helper/res_json.ts";
+import type WebSocket from "npm:ws";
+import type { Server, IncomingMessage, ServerResponse } from "node:http";
 import type { Duplex } from "node:stream";
 import type { Buffer } from "node:buffer";
 import type { StatusResult } from "./type.d.ts";
@@ -23,8 +25,8 @@ const emitter = new EventEmitter();
 const DATA_DIR = path.join(__dirname, "data");
 
 export class WeChatChannelsToolsServer {
-    #http!: http;
-    #api = new Map<string, (req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) => void>([
+    #http!: Server;
+    #api = new Map<string, (req: IncomingMessage, res: ServerResponse, params: URLSearchParams) => void>([
         ["/download?*", this.#apiDownload.bind(this)],
         ["/status", this.#apiStatus],
         ["/rm?*", this.#apiRemove.bind(this)],
@@ -42,7 +44,7 @@ export class WeChatChannelsToolsServer {
             .listen(HTTP_PORT, "0.0.0.0", this.#httpListeningListener.bind(this));
     }
 
-    async #httpRequestListener(req: http.IncomingMessage, res: http.OutgoingMessage) {
+    async #httpRequestListener(req: IncomingMessage, res: ServerResponse) {
         console.log("___request_listener", req.url);
         const origin = `https://${req.headers.host || "localhost"}`;
         const reqUrl = new URL((req.url ?? "").replace("/api/", "/"), origin);
@@ -61,7 +63,7 @@ export class WeChatChannelsToolsServer {
         res.end();
     }
 
-    #onHttpUpgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
+    #onHttpUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer) {
         const reqUrl = new URL((req.url ?? "").replace("/api/", "/").replace("/api-ws/", "/"), "http://localhost");
         console.log("___watch_socket", req.url);
         if (reqUrl.pathname === "/watch") {
@@ -82,7 +84,7 @@ export class WeChatChannelsToolsServer {
      * @param params
      * @private
      */
-    #apiDownload(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
+    #apiDownload(req: IncomingMessage, res: ServerResponse, params: URLSearchParams) {
         const snapshotFilter = this.#toNumberRangeFilter(params.get("snapshot"));
         const zip = new AdmZip();
         for (const entry of WalkFile(DATA_DIR)) {
@@ -104,7 +106,7 @@ export class WeChatChannelsToolsServer {
      * @param params
      * @private
      */
-    #apiStatus(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
+    #apiStatus(req: IncomingMessage, res: ServerResponse, params: URLSearchParams) {
         const time = new Date();
         res_json(res, {
             currentTime: time.getTime(),
@@ -119,7 +121,7 @@ export class WeChatChannelsToolsServer {
      * @param params
      * @private
      */
-    #apiRemove(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
+    #apiRemove(req: IncomingMessage, res: ServerResponse, params: URLSearchParams) {
         const timerange = params.get("timerange");
         if(!timerange) {
             return res_json(res, 0);
@@ -176,7 +178,7 @@ export class WeChatChannelsToolsDataWatcher {
      * @param socket
      * @param head
      */
-    public handleUpgrade(req: http.IncomingMessage, socket: Duplex, head: Buffer) {
+    public handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer) {
         this.#ws.handleUpgrade(req, socket, head, this.#wsConnectionListener);
     }
     #wsConnectionListener(socket: WebSocket) {

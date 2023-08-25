@@ -3,7 +3,7 @@
  * @param handler 回调
  * @param time 频率间隔时间(毫秒)
  */
-export function debounce(handler: Function, time: number) {
+export function debounce(handler: (...args: any[]) => void, time: number) {
     let timer = 0;
     return function () {
         if (timer) {

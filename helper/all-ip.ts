@@ -8,7 +8,7 @@ export const all_ip = [...JSON.stringify(os.networkInterfaces()).matchAll(/"addr
  *
  * @param {URL|string} url
  */
-export function* ListAllUrl(url: string) {
+export function* ListAllUrl(url: string | URL) {
     if (typeof url === "string") {
         url = new URL(url);
     }
