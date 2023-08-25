@@ -195,9 +195,9 @@ export class WeChatChannelsToolsAdmin {
                 continue;
             }
             const entryList = [...WalkFile(path.join(DATA_DIR, author))].sort((a, b) => {
-                return dateFileNameToTimestamp(b.entryname) - dateFileNameToTimestamp(a.entryname);
-            }).slice(0, snapshotLimit);
-            for (const entry of entryList) {
+                return dateFileNameToTimestamp(a.entryname) - dateFileNameToTimestamp(b.entryname);
+            });
+            for (const entry of entryList.slice(entryList.length - snapshotLimit)) {
                 const snapshot = dateFileNameToTimestamp(entry.entryname);
                 if (!snapshotFilter(snapshot)) {
                     continue;
