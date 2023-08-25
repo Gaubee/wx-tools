@@ -33,6 +33,7 @@ export class WeChatChannelsToolsAdmin {
         ["/authors", this.#apiAuthors],
         ["/authors/snapshot/record?*", this.#apiAuthorsSnapshotRecord],
         ["/query?*", this.#apiQuery.bind(this)],
+        ["/download/remove?*", this.#apiDownloadRemove.bind(this)]
     ]);
 
     constructor() {
@@ -224,6 +225,32 @@ export class WeChatChannelsToolsAdmin {
     }
 
     /**
+     * 移除download文件api
+     * @param req
+     * @param res
+     * @param params
+     * @private
+     */
+    #apiDownloadRemove(req: http.IncomingMessage, res: http.OutgoingMessage, params: URLSearchParams) {
+        const timerange = params.get("timerange");
+        if(!timerange) {
+            return res_json(res, 0);
+        }
+        const rangeFilter = this.#toNumberRangeFilter(timerange);
+        let num = 0;
+        for (const entry of WalkFile(DOWNLOAD_DIR)) {
+            const snapshot = dateFileNameToTimestamp(entry.entryname, "zip");
+            if (!rangeFilter(snapshot)) {
+                continue;
+            }
+            Deno.removeSync(entry.entrypath);
+            num++;
+        }
+        console.log("___api/download/remove", "done", timerange, num);
+        res_json(res, num);
+    }
+
+    /**
      * 整数/范围参数过滤器
      * @param key 参数Key
      * @private
@@ -342,20 +369,30 @@ export class WeChatChannelsToolsAdminDataPull {
      * @private
      */
     async #dataDownload() {
-        const isoTime = this.#downloadQueues.shift();
-        const timestamp = new Date(isoTime).valueOf();
-        const downloadUrl = new URL("/api/download", this.#options.api);
-        const timeRange = `${this.#downloadLastTime}-${timestamp}`;
-        downloadUrl.searchParams.append("snapshot", timeRange);
-        const startTime = Date.now();
-        console.log("___data_pull_socket_download_start", this.#downloadLastTime, timestamp);
-        const res = await fetch(downloadUrl.href);
-        const zipPath = path.join(DOWNLOAD_DIR, `${encodeURIComponent(isoTime)}.zip`);
-        const buffer = Buffer.from(await res.arrayBuffer());
-        await fs.promises.writeFile(zipPath, buffer, "binary");
-        await compressing.zip.uncompress(zipPath, DATA_DIR);
-        console.log("___data_pull_socket_download_completed", this.#downloadLastTime, timestamp, `${Math.ceil(buffer.byteLength/1024)}KB`,`${Date.now()-startTime}ms`, this.#downloadQueues.length);
-        this.#downloadLastTime = timestamp;
+        try {
+            const isoTime = this.#downloadQueues.shift();
+            const timestamp = new Date(isoTime).valueOf();
+            const downloadUrl = new URL("/api/download", this.#options.api);
+            const timeRange = `${this.#downloadLastTime}-${timestamp}`;
+            downloadUrl.searchParams.append("snapshot", timeRange);
+
+            const startTime = Date.now();
+            console.log("___data_pull_socket_download_start", this.#downloadLastTime, timestamp);
+            const res = await fetch(downloadUrl.href);
+            const zipPath = path.join(DOWNLOAD_DIR, `${encodeURIComponent(isoTime)}.zip`);
+            const buffer = Buffer.from(await res.arrayBuffer());
+            await fs.promises.writeFile(zipPath, buffer, "binary");
+            await compressing.zip.uncompress(zipPath, DATA_DIR);
+
+            const downloadRemoveAPI = new URL(`http://localhost:${HTTP_PORT}/api-admin/download/remove`);
+            downloadRemoveAPI.searchParams.append("timerange", `0-${this.#downloadLastTime}`);
+            await fetch(downloadRemoveAPI.href);
+
+            console.log("___data_pull_socket_download_completed", this.#downloadLastTime, timestamp, `${Math.ceil(buffer.byteLength/1024)}KB`,`${Date.now()-startTime}ms`, this.#downloadQueues.length);
+            this.#downloadLastTime = timestamp;
+        } catch (err: any) {
+            console.error(err);
+        }
         if(this.#downloadQueues.length) {
             this.#dataDownload();
         }
