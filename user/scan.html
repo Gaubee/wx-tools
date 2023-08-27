@@ -186,13 +186,16 @@
         wsUrl.pathname = "/lifecycle";
         wsUrl.searchParams.append("token", "{{TOKEN}}");
         const ws = new WebSocket(wsUrl);
-        ws.onclose = () => {
-            location.reload();
-        };
         const $qrcodeMask = document.querySelector(".qrcode-mask");
         const $expTime = document.querySelector("#exp-time");
         const $address = document.querySelector("#address");
         $address.value = localStorage.address || "";
+        ws.onclose = () => {
+            $qrcodeMask.classList.remove("hidden");
+            $qrcodeMask.classList.remove("hover");
+            $expTime.classList.add("expired");
+            $expTime.innerHTML = "二维码已失效，点击“刷新”重新生成";
+        };
         ws.onmessage = (event) => {
             console.log("event", event);
             const { data } = event;

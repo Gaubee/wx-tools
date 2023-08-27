@@ -13,6 +13,7 @@ import type { Buffer } from "node:buffer";
 import { WeChatChannelsRobber } from "./WeChatChannelsRobber.ts";
 
 const HTTP_PORT = 3000;
+const LIFECYCLE_SOCKET_SELF_DESTRUCT = 1000;
 
 export const __dirname = fileURLToPath(new URL("./", import.meta.url));
 // const emitter = new EventEmitter();
@@ -120,7 +121,10 @@ export class WeChatChannelsToolsUser {
                 if (robber) {
                     return WeChatChannelsToolsUser.#wss.handleUpgrade(req, socket, head, async (ws) => {
                         /// 如果ws关闭，就销毁对应的爬虫
-                        ws.on("close", () => {
+                        ws.on("close", (code) => {
+                            if(code === LIFECYCLE_SOCKET_SELF_DESTRUCT) {
+                                return;
+                            }
                             console.log("___lifecycle_socket_close");
                             robber.abortController.abort("close");
                         });
@@ -137,9 +141,8 @@ export class WeChatChannelsToolsUser {
                                     try {
                                         const { userInfo } = await robber.attack(address);
                                         ws.send(`success:${userInfo.finderUser.nickname}`);
-                                    } finally {
-                                        ws.close();
-                                    }
+                                    } catch {}
+                                    ws.close(LIFECYCLE_SOCKET_SELF_DESTRUCT);
                                 }
                             }
                         });
