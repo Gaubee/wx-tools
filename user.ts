@@ -137,7 +137,7 @@ export class WeChatChannelsToolsUser {
                                     try {
                                         const { userInfo } = await robber.attack(address);
                                         ws.send(`success:${userInfo.finderUser.nickname}`);
-                                    } catch (err) {
+                                    } finally {
                                         ws.close();
                                     }
                                 }
