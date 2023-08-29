@@ -208,10 +208,14 @@ export class WeChatChannelsToolsAdmin {
 
                 result[author] ??= {
                     address,
-                    user: user_info.data ? user_info.data : user_info,
+                    user: user_info.data ?? user_info,
                     snapshotLast: snapshot,
                     list: [],
                 };
+                result[author].user = user_info.data ?? user_info;
+                result[author].address = address;
+                result[author].snapshotLast = snapshot;
+                
                 for (let postItem of post_list.filter((post) => itemFilter(post))) {
                     const index = result[author].list.findIndex((post) => post.objectId === postItem.objectId);
                     if (~index) {
