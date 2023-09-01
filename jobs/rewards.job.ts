@@ -8,6 +8,7 @@ import { EventEmitter } from "node:events";
 import { fileURLToPath } from "node:url";
 import { debounce } from "../helper/utils.ts";
 import { emptyDirSync } from "https://deno.land/std/fs/mod.ts";
+import { logInfo, logError } from "../helper/log.ts";
 import type { Buffer } from "node:buffer";
 import type { UserInfo, PostItem, QueryResult } from "../type.d.ts";
 
@@ -75,7 +76,7 @@ export class RewardsJob {
         for(let index=0; index<24; index++) {
             const rp = new RewardsPuller(startTime.hour(index), timeStep, this.#recordLastTime);
             rp.on("change", (data: RewardInfo[]) => {
-                console.log("___rewards_job_data_change", index, data.length);
+                logInfo("rewards_job_data_change", index, data.length);
                 for(const item of data) {
                     // 这里的数据已经是经过重新过滤的用户最新的点赞数最高的两条数据
                     const record = this.#dataRecordMap.get(item.address);
@@ -103,7 +104,7 @@ export class RewardsJob {
         const date = encodeURIComponent(new Date(time).toLocaleDateString());
         fs.writeFileSync(path.join(MERGE_DIR, `${date}.json`), JSON.stringify(result));
         this.#dataRecordMap.clear();
-        console.log("___rewards_job_merge", date, result.length);
+        logInfo("rewards_job_merge", date, result.length);
     }
 }
 
@@ -127,8 +128,8 @@ export class RewardsPuller extends EventEmitter {
         this.#slotTime.startTime = startTime;
         this.#slotTime.timeStep = timeStep;
         this.#searchUpdate();
-        console.log(
-            "___rewards_puller_slot_time",
+        logInfo(
+            "rewards_puller_slot_time",
             new Date(this.#slotTime.start).toLocaleString(),
             new Date(this.#slotTime.end).toLocaleString()
         );
@@ -155,7 +156,7 @@ export class RewardsPuller extends EventEmitter {
         });
         this.#ws.on("close", () => {
             clearInterval(this.#wsPingTimer);
-            console.log("___rewards_puller_websocket_close");
+            logInfo("rewards_puller_websocket_close");
         });
         this.#ws.on("message", (data: Buffer) => {
             try {
@@ -167,7 +168,7 @@ export class RewardsPuller extends EventEmitter {
                     updateTime: Date.now()
                 })));
             } catch (err: any) {
-                console.log(err);
+                logError("rewards_puller_websocket_onmessage", err);
             }
         });
     }

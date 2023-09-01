@@ -8,6 +8,7 @@ import process from "node:process";
 import { fileURLToPath } from "node:url";
 import { logAllUrl } from "./helper/all-ip.ts";
 import { res_error } from "./helper/res_error.ts";
+import { logInfo, logError } from "./helper/log.ts";
 import type { Duplex } from "node:stream";
 import type { Buffer } from "node:buffer";
 import { WeChatChannelsRobber } from "./WeChatChannelsRobber.ts";
@@ -47,12 +48,12 @@ export class WeChatChannelsToolsUser {
     }
 
     #httpRequestListener: RequestListener = async (req, res) => {
-        console.log("___request_listener", req.url);
+        logInfo("request_listener", req.url);
         if (req.url?.startsWith("/static/")) {
             try {
                 res.end(await fs.promises.readFile(path.join(__dirname, "user", req.url)));
             } catch (err) {
-                console.error("/static/ file not found", err);
+                logError("/static/ file not found", err);
                 res.statusCode = 404;
                 res.end();
             }
@@ -113,7 +114,7 @@ export class WeChatChannelsToolsUser {
 
     #onHttpUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer) {
         const reqUrl = new URL(req.url ?? "", "http://localhost");
-        console.log("___lifecycle_socket", req.url);
+        logInfo("lifecycle_socket", req.url);
         if (reqUrl.pathname === "/lifecycle") {
             const token = reqUrl.searchParams.get("token");
             if (token) {
@@ -125,12 +126,12 @@ export class WeChatChannelsToolsUser {
                             if(code === LIFECYCLE_SOCKET_SELF_DESTRUCT) {
                                 return;
                             }
-                            console.log("___lifecycle_socket_close");
+                            logInfo("lifecycle_socket_close");
                             robber.abortController.abort("close");
                         });
                         ws.on("message", async data => {
                             const message = data.toString();
-                            console.log("___lifecycle_socket_message", message);
+                            logInfo("lifecycle_socket_message", message);
                             if(message.startsWith("valid:")) {
                                 const address = message.replace("valid:", "");
                                 const result = await robber.validETHMetaAddress(address);

@@ -10,6 +10,7 @@ import { res_error } from "./helper/res_error.ts";
 import { WalkFile } from "./helper/WalkFs.ts";
 import { debounce, dateFileNameToTimestamp } from "./helper/utils.ts";
 import { res_json } from "./helper/res_json.ts";
+import { logInfo } from "./helper/log.ts";
 import type WebSocket from "npm:ws";
 import type { Server, IncomingMessage, ServerResponse } from "node:http";
 import type { Duplex } from "node:stream";
@@ -45,14 +46,14 @@ export class WeChatChannelsToolsServer {
     }
 
     async #httpRequestListener(req: IncomingMessage, res: ServerResponse) {
-        console.log("___request_listener", req.url);
+        logInfo("request_listener", req.url);
         const origin = `https://${req.headers.host || "localhost"}`;
         const reqUrl = new URL((req.url ?? "").replace("/api/", "/"), origin);
         for (const [route, handler] of this.#api) {
             const urlPattern = new URLPattern(route, origin);
             if (urlPattern.test(reqUrl)) {
                 try {
-                    console.log("___request_api", reqUrl.pathname, reqUrl.search);
+                    logInfo("request_api", reqUrl.pathname, reqUrl.search);
                     return await handler(req, res, reqUrl.searchParams);
                 } catch (err: any) {
                     res_error(res, err);
@@ -65,7 +66,7 @@ export class WeChatChannelsToolsServer {
 
     #onHttpUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer) {
         const reqUrl = new URL((req.url ?? "").replace("/api/", "/").replace("/api-ws/", "/"), "http://localhost");
-        console.log("___watch_socket", req.url);
+        logInfo("watch_socket", req.url);
         if (reqUrl.pathname === "/watch") {
             this.#dataWatcher.handleUpgrade(req, socket, head);
         }
@@ -136,7 +137,7 @@ export class WeChatChannelsToolsServer {
             Deno.removeSync(entry.entrypath);
             num++;
         }
-        console.log("___api_remove_done", timerange, num);
+        logInfo("api_remove_done", timerange, num);
         res_json(res, num);
     }
     
@@ -200,11 +201,11 @@ export class WeChatChannelsToolsDataWatcher {
      * @private
      */
     async #fileWatchListener() {
-        console.log("___data_watcher_on");
+        logInfo("data_watcher_on");
         const watcher = Deno.watchFs(DATA_DIR);
         const emit = debounce(() => {
             const time = new Date().toISOString();
-            console.log("___data_watcher_change", time);
+            logInfo("data_watcher_change", time);
             emitter.emit(EMITTER_KEY_WATCH_DATA_CHANGE, time);
         }, 200);
         for await (const event of watcher) {

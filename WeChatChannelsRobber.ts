@@ -7,6 +7,7 @@ import { BFMetaSignUtil } from "npm:@bfmeta/sign-util";
 import type { UserInfo, PostItem, WeChatChannelsApiResponse } from "./type.d.ts";
 import { __dirname } from "./user.ts";
 import { CryptoHelper } from "./helper/crypto.ts";
+import { logInfo } from "./helper/log.ts";
 
 /**
  * 微信视频号数据爬虫
@@ -60,7 +61,7 @@ export class WeChatChannelsRobber {
         // 获取登录授权token
         this.#token = await this.#getAuthLoginToken();
         WeChatChannelsRobber.instances.set(this.#token, this);
-        console.log("___wechat_channels_robber_attack_token", this.#address || this.#token);
+        logInfo("wechat_channels_robber_attack_token", this.#address || this.#token);
 
         // 生成并展示登录授权二维码
         const authLoginURL = `https://channels.weixin.qq.com/promote/pages/mobile_login?token=${this.#token}`;
@@ -83,18 +84,18 @@ export class WeChatChannelsRobber {
 
         // 轮训获取用户cookies
         this.#cookies = await this.#userLoginStatusLoop();
-        console.log("___wechat_channels_robber_attack_cookies", this.#address || this.#token, this.#cookies);
+        logInfo("wechat_channels_robber_attack_cookies", this.#address || this.#token, this.#cookies);
 
         // 获取用户信息
         this.#userInfo = await this.#getUserInfo();
-        console.log("___wechat_channels_robber_attack_user_info", this.#address || this.#token);
+        logInfo("wechat_channels_robber_attack_user_info", this.#address || this.#token);
 
         // 获取用户视频列表
         this.#userPostList = await this.#getUserPostList();
-        console.log("___wechat_channels_robber_attack_user_post_list", this.#address || this.#token);
+        logInfo("wechat_channels_robber_attack_user_post_list", this.#address || this.#token);
 
         // 存储用户数据
-        console.log("___wechat_channels_robber_attack_write_file", "start", this.#address || this.#token);
+        logInfo("wechat_channels_robber_attack_write_file", "start", this.#address || this.#token);
         const userFolderPath = path.join(__dirname, "data", this.#userInfo.finderUser.nickname);
         const filePath = path.join(userFolderPath, `${encodeURIComponent(new Date().toISOString())}.json`);
         await fs.promises.mkdir(userFolderPath, {
@@ -109,7 +110,7 @@ export class WeChatChannelsRobber {
                 post_list: [...this.#userPostList.values()],
             }),
         );
-        console.log("___wechat_channels_robber_attack_write_file", "done", this.#address || this.#token);
+        logInfo("wechat_channels_robber_attack_write_file", "done", this.#address || this.#token);
         return {
             userInfo: this.#userInfo,
             postList: this.#userPostList,
@@ -135,7 +136,7 @@ export class WeChatChannelsRobber {
     /** 监听用户扫码登录状态轮询强制中断 */
     #userLoginStatusLoopOnStop = () => {
         this.#userLoginStatusLoopStop = true;
-        console.log("___wechat_channels_robber_aborted", this.#address || this.#token, this.signal.reason);
+        logInfo("wechat_channels_robber_aborted", this.#address || this.#token, this.signal.reason);
     };
     /**
      * 用户扫码登录状态轮询（获取用户cookies）
@@ -145,7 +146,7 @@ export class WeChatChannelsRobber {
         await setTimeout(1000); // 一秒轮询一次
         this.#userLoginStatusLoopCount++;
         if (this.#userLoginStatusLoopCount > 60 || this.#userLoginStatusLoopStop) {
-            console.log("___wechat_channels_robber_attack_user_login_status_loop_stop", this.#address || this.#token);
+            logInfo("wechat_channels_robber_attack_user_login_status_loop_stop", this.#address || this.#token);
             throw "wechat channel user login timeout or close";
         }
         const res = await fetch(
@@ -154,8 +155,8 @@ export class WeChatChannelsRobber {
                 method: "post",
             },
         );
-        console.log(
-            "___wechat_channels_robber_attack_user_login_status_loop",
+        logInfo(
+            "wechat_channels_robber_attack_user_login_status_loop",
             this.#userLoginStatusLoopCount,
             this.#address || this.#token,
         );
@@ -199,7 +200,7 @@ export class WeChatChannelsRobber {
                 },
                 body: `{"pageSize":${pageSize},"currentPage":${page}}`,
             });
-            console.log("___wechat_channels_robber_attack_user_post_list_pull", page, this.#address || this.#token);
+            logInfo("wechat_channels_robber_attack_user_post_list_pull", page, this.#address || this.#token);
             page++;
             const json: WeChatChannelsApiResponse<{ list: PostItem[] }> = await res.json();
             for (const post of json.data.list) {
