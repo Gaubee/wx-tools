@@ -1,8 +1,11 @@
 {
     "name": "wx-tools",
+    "type": "module",
     "scripts": {
         "user": "deno run -A --watch user.ts",
-        "admin": "deno run -A --watch admin.ts",
-        "api": "deno run -A --watch api.ts"
+        "admin": "deno run -A --watch admin.ts --data-ws ws://wxtools.bagen.info/api-ws/watch --api http://wxtools.bagen.info",
+        "admin-node": "deno run -A .\\scripts\\admin-dnt.ts && node .\\admin.startup.js --data-ws ws://wxtools.bagen.info/api-ws/watch --api http://wxtools.bagen.info",
+        "api": "deno run -A --watch api.ts",
+        "job:rewards": "deno run -A .\\jobs\\rewards.job.ts --time-step 172800000"
     }
 }
