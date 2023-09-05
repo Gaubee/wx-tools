@@ -22,7 +22,12 @@ export class Entry {
         return this.state.isDirectory();
     }
     readJson() {
-        return JSON.parse(fs.readFileSync(this.entrypath, "utf-8"));
+        try {
+            return JSON.parse(fs.readFileSync(this.entrypath, "utf-8"));
+        } catch (err) {
+            console.log(`文件损坏: ${this.entrypath}`);
+            throw err;
+        }
     }
     readBinary() {
         return fs.readFileSync(this.entrypath);

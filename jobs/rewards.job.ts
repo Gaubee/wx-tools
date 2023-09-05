@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import WebSocket from "npm:ws";
-import minimist from "npm:minimist";
+import { ws, minimist } from "../deps.ts";
+const { WebSocket } = ws;
 import schedule from "npm:node-schedule";
 import dayjs, { type Dayjs } from "npm:dayjs";
 import { EventEmitter } from "node:events";
@@ -11,6 +11,7 @@ import { emptyDirSync } from "https://deno.land/std/fs/mod.ts";
 import { logInfo, logError } from "../helper/log.ts";
 import type { Buffer } from "node:buffer";
 import type { UserInfo, PostItem, QueryResult } from "../type.d.ts";
+import process from "node:process";
 
 const __dirname = fileURLToPath(new URL("./", import.meta.url));
 
@@ -46,15 +47,15 @@ export class RewardsJob {
         fs.mkdirSync(MERGE_DIR, {
             recursive: true,
         });
-        
+
         const recordFile = fs.readdirSync(RECORD_DIR).at(0);
-        if(recordFile) {
+        if (recordFile) {
             this.#recordLastTime = new Date(decodeURIComponent(recordFile.replace(".json", ""))).getTime();
-            if(dayjs(this.#recordLastTime).format("YYYY-MM-DD") === dayjs(new Date()).format("YYYY-MM-DD")) {
+            if (dayjs(this.#recordLastTime).format("YYYY-MM-DD") === dayjs(new Date()).format("YYYY-MM-DD")) {
                 this.#dataRecordMap = new Map(JSON.parse(fs.readFileSync(path.join(RECORD_DIR, recordFile), "utf-8")));
             }
         }
-        
+
         this.record(timeStep);
     }
 
@@ -66,38 +67,41 @@ export class RewardsJob {
         const startTime = dayjs().minute(0).second(0);
         const save = debounce((updateTime: number) => {
             emptyDirSync(RECORD_DIR);
-            fs.writeFileSync(path.join(RECORD_DIR, `${encodeURIComponent(new Date(updateTime).toISOString())}.json`), JSON.stringify([...this.#dataRecordMap.entries()]));
-            if(this.#recordLastTime && dayjs(updateTime).day() !== dayjs(this.#recordLastTime).day()) {
+            fs.writeFileSync(
+                path.join(RECORD_DIR, `${encodeURIComponent(new Date(updateTime).toISOString())}.json`),
+                JSON.stringify([...this.#dataRecordMap.entries()]),
+            );
+            if (this.#recordLastTime && dayjs(updateTime).day() !== dayjs(this.#recordLastTime).day()) {
                 // 新的一天到来了
                 this.#merge(this.#recordLastTime);
             }
             this.#recordLastTime = updateTime;
         }, 1000);
-        for(let index=0; index<24; index++) {
+        for (let index = 0; index < 24; index++) {
             const rp = new RewardsPuller(startTime.hour(index), timeStep, this.#recordLastTime);
             rp.on("change", (data: RewardInfo[]) => {
                 logInfo("rewards_job_data_change", index, data.length);
-                for(const item of data) {
+                for (const item of data) {
                     // 这里的数据已经是经过重新过滤的用户最新的点赞数最高的两条数据
                     const record = this.#dataRecordMap.get(item.address);
-                    if(!record || record.updateTime < item.updateTime) {
+                    if (!record || record.updateTime < item.updateTime) {
                         this.#dataRecordMap.set(item.address, item);
                         save(item.updateTime);
                     }
                 }
             });
         }
-    }
-    
+    };
+
     #merge = (time: number) => {
         const result: MergeItem[] = [];
-        this.#dataRecordMap.forEach(item => {
-            for(const post of item.posts) {
+        this.#dataRecordMap.forEach((item) => {
+            for (const post of item.posts) {
                 result.push({
                     address: item.address,
                     user: item.user,
                     post,
-                    updateTime: item.updateTime
+                    updateTime: item.updateTime,
                 });
             }
         });
@@ -105,7 +109,7 @@ export class RewardsJob {
         fs.writeFileSync(path.join(MERGE_DIR, `${date}.json`), JSON.stringify(result));
         this.#dataRecordMap.clear();
         logInfo("rewards_job_merge", date, result.length);
-    }
+    };
 }
 
 export class RewardsPuller extends EventEmitter {
@@ -120,9 +124,9 @@ export class RewardsPuller extends EventEmitter {
         },
         get end() {
             return this.start + ONE_HOUR_TIMESTAMP;
-        }
-    }
-    
+        },
+    };
+
     constructor(startTime: Dayjs, timeStep: number, snapshotStartTime?: number) {
         super();
         this.#slotTime.startTime = startTime;
@@ -131,18 +135,18 @@ export class RewardsPuller extends EventEmitter {
         logInfo(
             "rewards_puller_slot_time",
             new Date(this.#slotTime.start).toLocaleString(),
-            new Date(this.#slotTime.end).toLocaleString()
+            new Date(this.#slotTime.end).toLocaleString(),
         );
-        
-        this.#ws = new WebSocket(`ws://localhost:3002/api-admin/query/observe`, {
-            perMessageDeflate: false
+
+        this.#ws = new WebSocket(`ws://127.0.0.1:3002/api-admin/query/observe`, {
+            perMessageDeflate: false,
         });
-        if(snapshotStartTime) {
-            this.#wsSearch.append("snapshotStartTime", snapshotStartTime);
+        if (snapshotStartTime) {
+            this.#wsSearch.append("snapshotStartTime", snapshotStartTime.toString());
         }
         this.#run();
     }
-    
+
     #run = () => {
         this.#wsSearch.append("snapshot_limit", "1");
         this.#wsSearch.append("description", "ETHMeta");
@@ -161,18 +165,21 @@ export class RewardsPuller extends EventEmitter {
         this.#ws.on("message", (data: Buffer) => {
             try {
                 const json = JSON.parse(data.toString()) as QueryResult;
-                this.emit("change", json.map(posts => ({
-                    address: posts.address,
-                    posts: posts.list.sort((a,b) => b.likeCount - a.likeCount).slice(0, 2),
-                    user: posts.user,
-                    updateTime: Date.now()
-                })));
+                this.emit(
+                    "change",
+                    json.map((posts) => ({
+                        address: posts.address,
+                        posts: posts.list.sort((a, b) => b.likeCount - a.likeCount).slice(0, 2),
+                        user: posts.user,
+                        updateTime: Date.now(),
+                    })),
+                );
             } catch (err: any) {
                 logError("rewards_puller_websocket_onmessage", err);
             }
         });
-    }
-    
+    };
+
     #searchUpdate = () => {
         schedule.scheduleJob("0 0 0 * * *", () => {
             // 每天凌晨0点更新查询条件
@@ -180,18 +187,18 @@ export class RewardsPuller extends EventEmitter {
             this.#wsSearch.set("createTime", `${this.#slotTime.start}-${this.#slotTime.end}`);
             this.#ws.send(this.#wsSearch.toString());
         });
-    }
-    
+    };
+
     destroy = () => {
         this.#ws.close();
         clearInterval(this.#wsPingTimer);
-    }
+    };
 }
 
 export default function startup() {
-    const args = minimist(Deno.args);
+    const args = minimist(process.argv);
     const timeStep = args["time-step"];
-    if(timeStep) {
+    if (timeStep) {
         new RewardsJob(+timeStep);
     }
 }
