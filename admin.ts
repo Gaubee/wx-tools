@@ -181,6 +181,7 @@ export class WeChatChannelsToolsAdmin {
         ["readCount", (item) => item.readCount],
         ["forwardCount", (item) => item.forwardCount],
         ["favCount", (item) => item.favCount],
+        ["videoLen", (item) => item.desc.media[0].videoPlayLen]
     ]);
     #queryParamsString = new Map<string, (item: PostItem) => string>([
         ["description", (item) => item.desc.description],
