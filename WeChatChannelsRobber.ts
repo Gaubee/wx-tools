@@ -162,7 +162,10 @@ export class WeChatChannelsRobber {
         );
         const setCookie = res.headers.get("set-cookie");
         if (setCookie?.includes("sessionid=")) {
-            return setCookie;
+            const match = setCookie.match(/sessionid=(\S*);/);
+            if(typeof match?.[0] === "string") {
+                return match[0];
+            }
         }
         return await this.#userLoginStatusLoop();
     }
