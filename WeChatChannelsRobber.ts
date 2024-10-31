@@ -161,7 +161,7 @@ export class WeChatChannelsRobber {
             this.#address || this.#token,
         );
         const setCookie = res.headers.get("set-cookie");
-        if (setCookie) {
+        if (setCookie?.includes("sessionid=")) {
             return setCookie;
         }
         return await this.#userLoginStatusLoop();
